@@ -3,7 +3,7 @@ import type { UIPlan, UIComponentIntent } from "../types/ui";
 import { ProblemSummaryCard } from "./cards/ProblemSummaryCard";
 import { ApproachComplexityCard } from "./cards/ApproachComplexityCard";
 import { BugAnalysisCard } from "./cards/BugAnalysisCard";
-import { ImageViewerCard } from "./cards/ImageViewerCard";
+import { DryRunMarkdownCard } from "./cards/DryRunMarkdownCard";
 import { SolutionComparisonCard } from "./cards/SolutionComparisonCard";
 import { Layers } from "lucide-react";
 
@@ -15,9 +15,10 @@ interface DynamicWorkspaceProps {
 export const DynamicWorkspace: React.FC<DynamicWorkspaceProps> = ({ uiPlan, onViewFullCard }) => {
   if (!uiPlan || !uiPlan.components || uiPlan.components.length === 0) {
     return (
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#0f0f11] custom-scrollbar">
-        <ProblemSummaryCard onViewFull={() => onViewFullCard?.({ type: "problem_summary", props: {}, priority: 1 })} />
-        <ApproachComplexityCard onViewFull={() => onViewFullCard?.({ type: "approach_card", props: {}, priority: 1 })} />
+      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#0f0f11] text-gray-500 font-mono text-xs border border-dashed border-[#27272a]">
+        <Layers className="w-6 h-6 text-gray-700 mb-2" />
+        <span>No Active Analysis Visual Cards</span>
+        <span className="text-[10px] text-gray-600 mt-1">Submit your workspace code and problem statement to begin.</span>
       </div>
     );
   }
@@ -40,8 +41,8 @@ export const DynamicWorkspace: React.FC<DynamicWorkspaceProps> = ({ uiPlan, onVi
       case "counterexample":
         return <BugAnalysisCard key={index} {...props} onViewFull={handleViewFull} />;
 
-      case "image_viewer":
-        return <ImageViewerCard key={index} {...props} onViewFull={handleViewFull} />;
+      case "dry_run_markdown":
+        return <DryRunMarkdownCard key={index} {...props} onViewFull={handleViewFull} />;
 
       case "solution_comparison":
       case "corrected_code":

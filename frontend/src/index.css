@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
 .active-execution-line {
-  background-color: rgba(234, 179, 8, 0.15) !important;
-  border-left: 4px solid #eab308 !important;
+  border-left: 2px solid #eab308 !important;
 }
 
 ::-webkit-scrollbar {

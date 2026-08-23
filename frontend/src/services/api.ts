@@ -38,4 +38,85 @@ export const api = {
     
     return res.json();
   },
+
+  analyzeSnippet: async (
+    code: string,
+    problemStatement: string,
+    testInput: string,
+    query?: string
+  ): Promise<any> => {
+    const res = await fetch(`${API_URL}/api/v1/sessions/analyze`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        problem_statement: problemStatement,
+        test_input: testInput,
+        query: query || ""
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const errMsg = errData.detail || "CodeMentor AI analysis failed.";
+      throw new Error(errMsg);
+    }
+
+    return res.json();
+  },
+
+  syncContext: async (
+    session_id: string | null,
+    code: string,
+    problemStatement: string,
+    testInput: string
+  ): Promise<{ session_id: string; message: string }> => {
+    const url = session_id 
+      ? `${API_URL}/api/v1/sessions/${session_id}/sync`
+      : `${API_URL}/api/v1/sessions/sync`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        problem_statement: problemStatement,
+        test_input: testInput
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const errMsg = errData.detail || "Workspace context sync failed.";
+      throw new Error(errMsg);
+    }
+
+    return res.json();
+  },
+
+  analyzeConversational: async (
+    session_id: string,
+    query: string
+  ): Promise<any> => {
+    const res = await fetch(`${API_URL}/api/v1/sessions/${session_id}/analyze`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const errMsg = errData.detail || "Conversational analysis failed.";
+      throw new Error(errMsg);
+    }
+
+    return res.json();
+  }
 };

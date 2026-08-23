@@ -31,7 +31,6 @@ export const RightAgentWindow: React.FC<RightAgentWindowProps> = ({
 
   return (
     <section className="w-1/2 flex flex-col h-full bg-[#18181b] overflow-hidden">
-      {/* 1. Header (Agent Window Bar) */}
       <div className="h-10 px-4 bg-[#131316] border-b border-[#27272a] flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-2">
           <div className="w-6 h-6 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
@@ -52,7 +51,6 @@ export const RightAgentWindow: React.FC<RightAgentWindowProps> = ({
         </div>
       </div>
 
-      {/* 2. Scrollable Agent Stream (Chat + Dynamic Components Inside Agent Window) */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#0f0f11]">
         {messages.map((msg) => (
           <div
@@ -105,7 +103,7 @@ export const RightAgentWindow: React.FC<RightAgentWindowProps> = ({
         {isAnalyzing && (
           <div className="flex items-center space-x-2 text-xs font-mono text-indigo-400 bg-indigo-500/10 p-3.5 border border-indigo-500/20">
             <Sparkles className="w-4 h-4 animate-spin text-amber-400" />
-            <span>Analyzing problem statement, solution logic & structure...</span>
+            <span>Agent Analyzing</span>
           </div>
         )}
 
@@ -118,7 +116,6 @@ export const RightAgentWindow: React.FC<RightAgentWindowProps> = ({
         </div>
       </div>
 
-      {/* 3. Chat Input Console */}
       <div className="p-3 border-t border-[#27272a] bg-[#131316]">
         <form onSubmit={handleSubmit} className="flex items-center space-x-2">
           <input

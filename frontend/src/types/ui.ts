@@ -9,7 +9,7 @@ export type ComponentType =
   | "explanation"
   | "corrected_code"
   | "code_viewer"
-  | "image_viewer";
+  | "dry_run_markdown";
 
 export type ActionType =
   | "DRY_RUN"

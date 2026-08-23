@@ -5,15 +5,28 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
-
-from backend.agents.trace_analyzer import analyze_trace_programmatic
+from backend.agents.prompts import SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
-class Anomaly(BaseModel):
-    type: str = Field(..., description="Type of anomaly: out_of_bounds, infinite_recursion, infinite_loop, runtime_error, or none.")
-    message: str = Field(..., description="Explanation of the anomaly.")
-    line: int = Field(..., description="Line number where the anomaly was detected.")
+class ProblemUnderstanding(BaseModel):
+    title: str = Field(..., description="The title of the DSA problem.")
+    difficulty: str = Field(..., description="Difficulty level: Easy, Medium, or Hard.")
+    statement: str = Field(..., description="Extracted clean problem statement.")
+    objective: str = Field(..., description="Primary objective or goal of the problem.")
+    inputs: List[str] = Field(..., description="Key input parameters and variables.")
+    outputs: List[str] = Field(..., description="Key output variables and format.")
+    constraints: List[str] = Field(..., description="Array size limits, value ranges, and time/space constraints.")
+    edge_cases: List[str] = Field(..., description="Edge cases to consider (e.g. empty array, single element, negative values).")
+    pattern: str = Field(..., description="DSA algorithmic pattern (e.g. Two Pointers, Sliding Window, DP, DFS, BFS, Hash Map).")
+    expected_complexity: str = Field(..., description="Expected optimal complexity bound (e.g. Time: O(N), Space: O(N)).")
+
+class UserApproach(BaseModel):
+    algorithm: str = Field(..., description="Name of the algorithm/approach used in the user code.")
+    logic: str = Field(..., description="Core logic details of the approach.")
+    data_structures: List[str] = Field(..., description="Data structures utilized.")
+    correctness_classification: str = Field(..., description="Classification of approach: optimal, suboptimal, buggy, or incorrect.")
+    complexity_rationale: str = Field(..., description="Explanation of why this approach yields its complexity.")
 
 class ComplexityEstimation(BaseModel):
     time: str = Field(..., description="Estimated Time Complexity (e.g., O(N log N)).")
@@ -21,13 +34,16 @@ class ComplexityEstimation(BaseModel):
     rationale: str = Field(..., description="Brief rationale for the complexity estimate.")
 
 class BugAnalysis(BaseModel):
-    issue: str = Field(..., description="If a bug is present, explain the issue. If the code executes successfully with no bugs, provide a detailed walkthrough of the dry-run solution execution.")
-    fix: str = Field(..., description="If a bug is present, explain the fix. If correct, return 'No bugs detected'.")
-    code_fixed: str = Field(..., description="Corrected C++ source code if a bug is present. If correct, return the original C++ code unchanged.")
+    issue: str = Field(..., description="Detailed explanation of the logical issue/bug if present. If correct, return 'No bugs detected'.")
+    fix: str = Field(..., description="Detailed fix instructions. If correct, return 'No bugs detected'.")
+    counterexample_input: str = Field(..., description="Failing counterexample input parameters if buggy.")
+    expected_output: str = Field(..., description="Expected correct output for the counterexample.")
+    actual_output: str = Field(..., description="Actual incorrect output produced by user code for the counterexample.")
+    corrected_code: str = Field(..., description="Corrected C++ or Python source code if buggy. If correct, return the original code unchanged.")
 
 class UIComponentIntent(BaseModel):
-    type: str = Field(..., description="Type of UI component: variables_delta, bug_analysis, recursion_tree, graph_visualizer, or array_visualizer.")
-    props: Dict[str, Any] = Field(default_factory=dict, description="Component configuration properties.")
+    type: str = Field(..., description="Type of UI component: problem_summary, approach_card, bug_analysis, dry_run_markdown, or solution_comparison.")
+    props: Dict[str, Any] = Field(default_factory=dict, description="Component configuration properties corresponding to type's expected structure.")
     priority: int = Field(..., description="Ordering priority of the component (higher values rendered first).")
 
 class UIPlan(BaseModel):
@@ -35,10 +51,13 @@ class UIPlan(BaseModel):
     rationale: str = Field(..., description="Concise rationale for this layout choice.")
 
 class AgentAnalysisResponse(BaseModel):
-    anomalies: List[Anomaly] = Field(..., description="List of execution trace anomalies detected.")
-    complexity: ComplexityEstimation = Field(..., description="Algorithmic complexity estimate.")
-    bug_analysis: BugAnalysis = Field(..., description="Analysis of the code behavior (bug explanation or execution walkthrough).")
-    ui_plan: UIPlan = Field(..., description="Planned UI components composition.")
+    intent: str = Field(..., description="The detected user intent: 'General Chat' (greetings, general chat questions), 'Explain Approach' (requests algorithm explanation), 'Debug / Show Fix' (looks for bugs/fixes), 'Optimize Solution' (requests optimized solution), 'Compare Complexity' (requests side-by-side complexity analysis), or 'Dry Run' (requests visual dry run simulation).")
+    chat_response: str = Field(..., description="Conversational text response answering the user query. Must explain the reasoning, answer questions, or introduce the visual/interactive cards being rendered.")
+    problem_understanding: Optional[ProblemUnderstanding] = Field(None, description="DSA problem summary and bounds. Set to None if intent is General Chat.")
+    user_approach: Optional[UserApproach] = Field(None, description="User approach analysis and classification. Set to None if intent is General Chat.")
+    complexity: Optional[ComplexityEstimation] = Field(None, description="Algorithmic complexity estimate. Set to None if intent is General Chat.")
+    bug_analysis: Optional[BugAnalysis] = Field(None, description="Logical bug diagnosis and counterexample. Set to None if intent is General Chat.")
+    ui_plan: Optional[UIPlan] = Field(None, description="Planned UI components composition. Set to None if intent is General Chat.")
 
 def load_dotenv():
     for path in (".env", "backend/.env", "../.env"):
@@ -53,7 +72,7 @@ def load_dotenv():
 
 class AgentPlanner:
     """
-    Agentic Planner orchestrating Query Analysis, Trace Retrieval, Anomaly Scanning, and Generative UI planning.
+    Agentic Planner orchestrating Query Analysis, DSA Problem Understanding, and Generative UI planning.
     Uses Google GenAI SDK (Gemini API) to output structured UIPlans and TraceAnalysisResults.
     """
     def __init__(self):
@@ -67,11 +86,10 @@ class AgentPlanner:
         except Exception as e:
             raise RuntimeError(f"Agent Error: Failed to initialize Gemini API Client: {str(e)}")
 
-    def plan_session(self, code: str, input_data: str, trace_data: Dict[str, Any], query: Optional[str] = None) -> AgentAnalysisResponse:
+    def plan_session(self, code: str, problem_statement: str, test_input: str, query: Optional[str] = None) -> AgentAnalysisResponse:
         """
-        Orchestrates trace scanner tools, fetches Gemini API analysis, and outputs structured UI plans.
+        Invokes Gemini API with structured schema output to construct ProblemUnderstanding, UserApproach, and UIPlan.
         """
-        tool_result = analyze_trace_programmatic(trace_data, code)
         schema_dict = AgentAnalysisResponse.model_json_schema()
         
         def clean_schema(s: Any):
@@ -85,37 +103,18 @@ class AgentPlanner:
                     
         clean_schema(schema_dict)
         
-        system_prompt = (
-            "You are the Agent Planner for the Dry-Run Timeline Analyzer.\n"
-            "You analyze C++ source code, standard inputs, and program execution trace logs to find bugs, "
-            "estimate algorithmic complexity, and structure a custom user interface plan (UIPlan).\n\n"
-            "CRITICAL INSTRUCTIONS FOR SUCCESSFULLY RUNNING CODE:\n"
-            "- If the execution status is 'success' and no anomalies are found, the code is correct.\n"
-            "- For correct code: under 'bug_analysis.issue', provide a clear, step-by-step walkthrough of the solution's dry-run execution (how the variables change, what is printed, and how it arrives at the final answer based on the input).\n"
-            "- Set 'bug_analysis.fix' to 'No bugs detected' and 'bug_analysis.code_fixed' to the original source code unchanged.\n\n"
-            "Keep the UIPlan rationale concise (e.g. 'Recursion tree prioritized because the query targets recursive call behavior').\n"
-            "Do NOT send raw/unrestricted LLM thoughts in the rationale."
-        )
-        
         user_prompt = f"""
-C++ SOURCE CODE:
-```cpp
-{code}
-```
+PROBLEM STATEMENT:
+{problem_statement or "(None)"}
 
-INPUT PROVIDED:
-{input_data or "(None)"}
+USER SOLUTION CODE:
+{code or "(None)"}
 
-EXECUTION TRACE OVERVIEW:
-- Total Steps Captured: {len(trace_data.get('events', []))}
-- Execution Status: {trace_data.get('status')}
-- Error Message: {trace_data.get('error_message') or "(None)"}
+ACTIVE SAMPLE TEST CASE:
+{test_input or "(None)"}
 
-PROGRAMMATIC SCANNERS DETECTED:
-{json.dumps(tool_result, indent=2)}
-
-USER QUESTION / FOCUS:
-{query or "Analyze the execution trace and provide a structured plan and bug analysis."}
+USER CHAT INQUIRY:
+{query or "Analyze my approach, find any logical bugs, and compare it with the optimal solution complexity."}
 """
 
         try:
@@ -123,7 +122,7 @@ USER QUESTION / FOCUS:
                 model="gemini-2.5-flash",
                 contents=user_prompt,
                 config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
+                    system_instruction=SYSTEM_PROMPT,
                     response_mime_type="application/json",
                     response_schema=schema_dict,
                     temperature=0.2
@@ -131,7 +130,8 @@ USER QUESTION / FOCUS:
             )
             
             raw_json = json.loads(response.text)
-            return AgentAnalysisResponse.model_validate(raw_json)
+            validated_response = AgentAnalysisResponse.model_validate(raw_json)
+            return validated_response
             
         except Exception as e:
             raise RuntimeError(f"Agent Error: Gemini API generation failed: {str(e)}")

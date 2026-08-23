@@ -4,7 +4,7 @@ import type { UIComponentIntent } from "../types/ui";
 import { ProblemSummaryCard } from "./cards/ProblemSummaryCard";
 import { ApproachComplexityCard } from "./cards/ApproachComplexityCard";
 import { BugAnalysisCard } from "./cards/BugAnalysisCard";
-import { ImageViewerCard } from "./cards/ImageViewerCard";
+import { DryRunMarkdownCard } from "./cards/DryRunMarkdownCard";
 import { SolutionComparisonCard } from "./cards/SolutionComparisonCard";
 
 interface FullCardModalProps {
@@ -27,8 +27,8 @@ export const FullCardModal: React.FC<FullCardModalProps> = ({ intent, onClose })
       case "bug_analysis":
       case "counterexample":
         return <BugAnalysisCard {...props} />;
-      case "image_viewer":
-        return <ImageViewerCard {...props} />;
+      case "dry_run_markdown":
+        return <DryRunMarkdownCard {...props} />;
       case "solution_comparison":
       case "corrected_code":
       case "optimization_card":

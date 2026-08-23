@@ -35,7 +35,6 @@ export const PersistentChat: React.FC<PersistentChatProps> = ({
 
   return (
     <aside className="w-115 border-l border-[#27272a] bg-[#18181b] flex flex-col h-full shrink-0 z-10">
-      {/* 1. Header (Stitch Agent Bar) */}
       <div className="h-14 px-5 border-b border-[#27272a] bg-[#131316] flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
@@ -55,7 +54,6 @@ export const PersistentChat: React.FC<PersistentChatProps> = ({
         </div>
       </div>
 
-      {/* 2. Scrollable Messages Feed */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
         {messages.map((msg) => (
           <div
@@ -87,7 +85,6 @@ export const PersistentChat: React.FC<PersistentChatProps> = ({
               {msg.content}
             </div>
 
-            {/* Contextual Action Chips */}
             {msg.actions && msg.actions.length > 0 && (
               <div className="mt-2.5 flex flex-wrap gap-1.5 max-w-[95%]">
                 {msg.actions.map((act) => (
@@ -113,9 +110,7 @@ export const PersistentChat: React.FC<PersistentChatProps> = ({
         )}
       </div>
 
-      {/* 3. Input Console & Context Tabs Drawer */}
       <div className="border-t border-[#27272a] bg-[#131316] p-3 space-y-2">
-        {/* Input Drawer Tabs */}
         <div className="flex items-center border-b border-[#27272a] pb-1 space-x-1 text-[11px] font-mono">
           <button
             onClick={() => setActiveInputTab("query")}
@@ -166,7 +161,6 @@ export const PersistentChat: React.FC<PersistentChatProps> = ({
           </button>
         </div>
 
-        {/* Tab Contents */}
         {activeInputTab === "problem" && (
           <div>
             <label className="text-[10px] font-mono text-gray-400 uppercase font-bold block mb-1">
@@ -212,7 +206,6 @@ export const PersistentChat: React.FC<PersistentChatProps> = ({
           </div>
         )}
 
-        {/* Chat Query Form */}
         <form onSubmit={handleSubmit} className="flex items-center space-x-2">
           <input
             type="text"

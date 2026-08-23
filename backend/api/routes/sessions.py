@@ -1,9 +1,11 @@
 import json
 from fastapi import APIRouter, HTTPException, Depends
 from backend.app.schemas.session import (
-    SessionCreateRequest, SessionStepRequest, SessionJumpRequest, SessionStateResponse
+    SessionCreateRequest, SessionStateResponse
 )
-from backend.app.schemas.analysis import AnalysisRequest
+from backend.app.schemas.analysis import (
+    AnalysisRequest, ContextSyncRequest, ContextSyncResponse, ConversationalQueryRequest
+)
 from backend.agents.planner import AgentPlanner, AgentAnalysisResponse
 from backend.app.redis_client import redis_client
 from backend.execution.sandbox.manager import SandboxManager
@@ -117,17 +119,100 @@ async def get_session(session_id: str):
 
 
 
+import uuid
+import logging
+
+logger = logging.getLogger(__name__)
+
+memory_session_store = {}
+
+def save_session_context(session_id: str, code: str, problem_statement: str, test_input: str):
+    if redis_client:
+        try:
+            redis_client.setex(f"code_{session_id}", 1800, code)
+            redis_client.setex(f"problem_{session_id}", 1800, problem_statement)
+            redis_client.setex(f"input_{session_id}", 1800, test_input)
+        except Exception as e:
+            logger.warning(f"Redis write failed, using local memory: {e}")
+            
+    memory_session_store[session_id] = {
+        "code": code,
+        "problem_statement": problem_statement,
+        "test_input": test_input
+    }
+
+def get_session_context(session_id: str) -> tuple:
+    if session_id in memory_session_store:
+        ctx = memory_session_store[session_id]
+        return ctx["code"], ctx["problem_statement"], ctx["test_input"]
+        
+    if redis_client:
+        try:
+            code_bytes = redis_client.get(f"code_{session_id}")
+            prob_bytes = redis_client.get(f"problem_{session_id}")
+            input_bytes = redis_client.get(f"input_{session_id}")
+            
+            code = code_bytes.decode("utf8") if isinstance(code_bytes, bytes) else str(code_bytes or "")
+            prob = prob_bytes.decode("utf8") if isinstance(prob_bytes, bytes) else str(prob_bytes or "")
+            inp = input_bytes.decode("utf8") if isinstance(input_bytes, bytes) else str(input_bytes or "")
+            if code or prob or inp:
+                return code, prob, inp
+        except Exception as e:
+            logger.warning(f"Redis read failed: {e}")
+            
+    return "", "", ""
+
+@router.post("/sync", response_model=ContextSyncResponse)
+async def sync_new_session(req: ContextSyncRequest):
+    """Registers a new workspace context, creating a unique session ID."""
+    session_id = str(uuid.uuid4())
+    save_session_context(session_id, req.code, req.problem_statement, req.test_input)
+    return ContextSyncResponse(session_id=session_id, message="Workspace context synced successfully.")
+
+@router.post("/{session_id}/sync", response_model=ContextSyncResponse)
+async def sync_existing_session(session_id: str, req: ContextSyncRequest):
+    """Updates the active workspace context for an existing session ID."""
+    save_session_context(session_id, req.code, req.problem_statement, req.test_input)
+    return ContextSyncResponse(session_id=session_id, message="Workspace context updated successfully.")
+
 @router.post("/{session_id}/analyze", response_model=AgentAnalysisResponse)
-async def analyze_session(session_id: str, req: AnalysisRequest):
-    """Invokes the Agent Planner to analyze the session trace and code."""
-    trace_data, _, code = get_session_data(session_id)
-    
-    input_val = redis_client.get(f"input_{session_id}") or ""
-    input_data = input_val.decode("utf8") if isinstance(input_val, bytes) else str(input_val)
-    
+async def analyze_session(session_id: str, req: ConversationalQueryRequest):
+    """Invokes the Agent Planner to analyze conversational query using the active synced workspace context."""
+    code, problem_statement, test_input = get_session_context(session_id)
+    if not code and not problem_statement:
+         raise HTTPException(status_code=400, detail="No active synced workspace context found. Please sync your details first.")
+         
     try:
         planner = AgentPlanner()
-        analysis = planner.plan_session(code, input_data, trace_data, req.query)
+        analysis = planner.plan_session(
+            code=code,
+            problem_statement=problem_statement,
+            test_input=test_input,
+            query=req.query
+        )
         return analysis
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Agent analysis failed: {str(e)}")
+        logger.error(f"Agent analysis failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="CodeMentor AI: There was an issue processing your request. Please try again in a while."
+        )
+
+@router.post("/analyze", response_model=AgentAnalysisResponse)
+async def analyze_snippet(req: AnalysisRequest):
+    """Direct standalone analysis of user code snippet, problem statement, and active test case (for tests/direct access)."""
+    try:
+        planner = AgentPlanner()
+        analysis = planner.plan_session(
+            code=req.code,
+            problem_statement=req.problem_statement,
+            test_input=req.test_input,
+            query=req.query
+        )
+        return analysis
+    except Exception as e:
+        logger.error(f"Snippet analysis failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="CodeMentor AI: There was an issue processing your request. Please try again in a while."
+        )

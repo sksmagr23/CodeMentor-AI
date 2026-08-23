@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { EditorPanel } from "./EditorPanel";
 import type { TestCase } from "../types/ui";
-import { Code2, FileText, Terminal, Trash2, Plus, CheckCircle, AlertCircle } from "lucide-react";
+import { Code2, FileText, Terminal, Trash2, Plus, CheckCircle, AlertCircle, Sparkles } from "lucide-react";
 
 interface LeftProblemPanelProps {
   code: string;
@@ -16,6 +16,9 @@ interface LeftProblemPanelProps {
   activeLine: number;
   sessionId: string | null;
   onClearCode: () => void;
+  onSubmitToAgent: () => void;
+  isSyncing: boolean;
+  isSynced: boolean;
 }
 
 export const LeftProblemPanel: React.FC<LeftProblemPanelProps> = ({
@@ -30,7 +33,10 @@ export const LeftProblemPanel: React.FC<LeftProblemPanelProps> = ({
   isAnalyzing,
   activeLine,
   sessionId,
-  onClearCode
+  onClearCode,
+  onSubmitToAgent,
+  isSyncing,
+  isSynced
 }) => {
   const [activeTab, setActiveTab] = useState<"code" | "problem" | "input">("code");
 
@@ -41,8 +47,8 @@ export const LeftProblemPanel: React.FC<LeftProblemPanelProps> = ({
     const newCase: TestCase = {
       id: newId,
       name: `Test Case ${testCases.length + 1}`,
-      input: "nums = [3, 2, 4], target = 6",
-      expectedOutput: "[1, 2]"
+      input: "",
+      expectedOutput: ""
     };
     setTestCases((prev) => [...prev, newCase]);
     setActiveTestCaseId(newId);
@@ -65,7 +71,6 @@ export const LeftProblemPanel: React.FC<LeftProblemPanelProps> = ({
 
   return (
     <section className="w-1/2 flex flex-col h-full border-r border-[#27272a] bg-[#0f0f11] overflow-hidden">
-      {/* 1. Single Clean Header Toolbar with 3 Tab Selectors & Single Clear Button */}
       <div className="h-11 bg-[#131316] border-b border-[#27272a] flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center space-x-1">
           <button
@@ -105,23 +110,36 @@ export const LeftProblemPanel: React.FC<LeftProblemPanelProps> = ({
           </button>
         </div>
 
-        {/* Single Clean Clear Button */}
-        {activeTab === "code" && (
+        <div className="flex items-center space-x-2">
           <button
-            onClick={onClearCode}
-            disabled={isAnalyzing}
-            className="flex items-center space-x-1 px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-[11px] font-mono transition disabled:opacity-50 cursor-pointer"
-            title="Clear Editor Code"
+            onClick={onSubmitToAgent}
+            disabled={isSyncing || isAnalyzing}
+            className={`flex items-center space-x-1.5 px-3 py-1 border text-[11px] font-mono transition disabled:opacity-50 cursor-pointer ${
+              isSynced
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                : "bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-500/50"
+            }`}
+            title="Submit code, problem, and test inputs to CodeMentor AI"
           >
-            <Trash2 className="w-3 h-3" />
-            <span>Clear</span>
+            <Sparkles className="w-3 h-3 text-amber-400" />
+            <span>{isSyncing ? "Syncing..." : isSynced ? "Synced ✓" : "Submit to Agent"}</span>
           </button>
-        )}
+
+          {activeTab === "code" && (
+            <button
+              onClick={onClearCode}
+              disabled={isAnalyzing}
+              className="flex items-center space-x-1 px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-[11px] font-mono transition disabled:opacity-50 cursor-pointer"
+              title="Clear Editor Code"
+            >
+              <Trash2 className="w-3 h-3" />
+              <span>Clear</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* 2. Full-Height Main Viewport Area (100% of Left Panel) */}
       <div className="flex-1 flex flex-col overflow-hidden bg-[#0f0f11]">
-        {/* Tab 1: Full-Height Code Editor */}
         {activeTab === "code" && (
           <div className="flex-1 flex flex-col h-full overflow-hidden">
             <EditorPanel
@@ -135,7 +153,6 @@ export const LeftProblemPanel: React.FC<LeftProblemPanelProps> = ({
           </div>
         )}
 
-        {/* Tab 2: Full-Height Problem Statement Editor */}
         {activeTab === "problem" && (
           <div className="flex-1 flex flex-col h-full p-6 space-y-4 overflow-y-auto custom-scrollbar bg-[#0f0f11]">
             <div className="flex items-center justify-between border-b border-[#27272a] pb-3">
@@ -164,10 +181,8 @@ export const LeftProblemPanel: React.FC<LeftProblemPanelProps> = ({
           </div>
         )}
 
-        {/* Tab 3: Full-Height Multiple Test Cases Manager */}
         {activeTab === "input" && (
           <div className="flex-1 flex h-full overflow-hidden bg-[#0f0f11]">
-            {/* Test Case Selection Sidebar */}
             <div className="w-48 border-r border-[#27272a] bg-[#131316] flex flex-col p-3 space-y-2 shrink-0">
               <div className="flex items-center justify-between pb-2 border-b border-[#27272a]">
                 <span className="text-[10px] font-mono font-bold uppercase text-gray-400">
@@ -206,8 +221,7 @@ export const LeftProblemPanel: React.FC<LeftProblemPanelProps> = ({
                 })}
               </div>
             </div>
-
-            {/* Test Case Content Editor */}
+            
             <div className="flex-1 flex flex-col p-6 space-y-4 overflow-y-auto custom-scrollbar">
               {activeTestCase && (
                 <>
