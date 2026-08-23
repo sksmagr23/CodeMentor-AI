@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import type { ChatMessage, ActionType, UIPlan, UIComponentIntent } from "../types/ui";
+import type { ChatMessage, ActionType, UIComponentIntent } from "../types/ui";
 import { DynamicWorkspace } from "./DynamicWorkspace";
 import { Bot, User, Sparkles, Play } from "lucide-react";
 
 interface RightAgentWindowProps {
   messages: ChatMessage[];
-  currentUIPlan: UIPlan | null;
   onSendMessage: (query: string) => void;
   onSelectAction: (actionType: ActionType, actionLabel: string) => void;
   onViewFullCard: (intent: UIComponentIntent) => void;
@@ -14,7 +13,6 @@ interface RightAgentWindowProps {
 
 export const RightAgentWindow: React.FC<RightAgentWindowProps> = ({
   messages,
-  currentUIPlan,
   onSendMessage,
   onSelectAction,
   onViewFullCard,
@@ -88,13 +86,19 @@ export const RightAgentWindow: React.FC<RightAgentWindowProps> = ({
                 {msg.actions.map((act) => (
                   <button
                     key={act.id}
-                    onClick={() => onSelectAction(act.actionType, act.label)}
+                    onClick={() => onSelectAction(act.actionType, act.query || act.label)}
                     className="px-2.5 py-1 bg-[#27272a] hover:bg-[#3f3f46] text-emerald-300 hover:text-white border border-[#3f3f46] text-[11px] font-mono transition flex items-center space-x-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3 text-amber-400" />
                     <span>{act.label}</span>
                   </button>
                 ))}
+              </div>
+            )}
+
+            {msg.uiPlan && msg.uiPlan.components && msg.uiPlan.components.length > 0 && (
+              <div className="mt-3 w-full max-w-[95%] border-t border-[#27272a]/30 pt-3">
+                <DynamicWorkspace uiPlan={msg.uiPlan} onViewFullCard={onViewFullCard} />
               </div>
             )}
           </div>
@@ -106,14 +110,6 @@ export const RightAgentWindow: React.FC<RightAgentWindowProps> = ({
             <span>Agent Analyzing</span>
           </div>
         )}
-
-        {/* Dynamic Workspace Component Cards Rendered INSIDE Agent Window */}
-        <div className="mt-4 pt-4 border-t border-[#27272a]">
-          <span className="text-[10px] font-mono font-bold uppercase text-gray-400 block mb-2 tracking-wider">
-            Agent Visual Workspace Output
-          </span>
-          <DynamicWorkspace uiPlan={currentUIPlan} onViewFullCard={onViewFullCard} />
-        </div>
       </div>
 
       <div className="p-3 border-t border-[#27272a] bg-[#131316]">

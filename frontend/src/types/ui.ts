@@ -24,6 +24,7 @@ export interface ContextualAction {
   id: string;
   label: string;
   actionType: ActionType;
+  query?: string;
   payload?: Record<string, unknown>;
 }
 

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { EditorPanel } from "./EditorPanel";
 import type { TestCase } from "../types/ui";
-import { Code2, FileText, Terminal, Trash2, Plus, CheckCircle, AlertCircle, Sparkles } from "lucide-react";
+import { Code2, FileText, Terminal, Trash2, Plus, CheckCircle, AlertCircle } from "lucide-react";
 
 interface LeftProblemPanelProps {
   code: string;
@@ -16,9 +16,6 @@ interface LeftProblemPanelProps {
   activeLine: number;
   sessionId: string | null;
   onClearCode: () => void;
-  onSubmitToAgent: () => void;
-  isSyncing: boolean;
-  isSynced: boolean;
 }
 
 export const LeftProblemPanel: React.FC<LeftProblemPanelProps> = ({
@@ -33,10 +30,7 @@ export const LeftProblemPanel: React.FC<LeftProblemPanelProps> = ({
   isAnalyzing,
   activeLine,
   sessionId,
-  onClearCode,
-  onSubmitToAgent,
-  isSyncing,
-  isSynced
+  onClearCode
 }) => {
   const [activeTab, setActiveTab] = useState<"code" | "problem" | "input">("code");
 
@@ -111,20 +105,6 @@ export const LeftProblemPanel: React.FC<LeftProblemPanelProps> = ({
         </div>
 
         <div className="flex items-center space-x-2">
-          <button
-            onClick={onSubmitToAgent}
-            disabled={isSyncing || isAnalyzing}
-            className={`flex items-center space-x-1.5 px-3 py-1 border text-[11px] font-mono transition disabled:opacity-50 cursor-pointer ${
-              isSynced
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
-                : "bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-500/50"
-            }`}
-            title="Submit code, problem, and test inputs to CodeMentor AI"
-          >
-            <Sparkles className="w-3 h-3 text-amber-400" />
-            <span>{isSyncing ? "Syncing..." : isSynced ? "Synced ✓" : "Submit to Agent"}</span>
-          </button>
-
           {activeTab === "code" && (
             <button
               onClick={onClearCode}

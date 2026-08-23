@@ -4,7 +4,7 @@ import { LeftProblemPanel } from "./components/LeftProblemPanel";
 import { RightAgentWindow } from "./components/RightAgentWindow";
 import { FullCardModal } from "./components/FullCardModal";
 import { api } from "./services/api";
-import type { ChatMessage, ActionType, UIPlan, UIComponentIntent, TestCase } from "./types/ui";
+import type { ChatMessage, ActionType, UIComponentIntent, TestCase } from "./types/ui";
 
 const DEFAULT_CODE = `// Write your Algorithmic solution here in C++ or any other supported language.
 `;
@@ -22,13 +22,9 @@ export default function App() {
   ]);
   const [activeTestCaseId, setActiveTestCaseId] = useState<string>("1");
 
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [activeLine] = useState<number>(1);
   const [status] = useState<string>("idle");
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  const [isSynced, setIsSynced] = useState<boolean>(false);
-  const [currentUIPlan, setCurrentUIPlan] = useState<UIPlan | null>(null);
   const [selectedFullCard, setSelectedFullCard] = useState<UIComponentIntent | null>(null);
 
   const activeTestCase = testCases.find((tc) => tc.id === activeTestCaseId) || testCases[0];
@@ -45,57 +41,18 @@ export default function App() {
 
   const handleClearCode = useCallback(() => {
     setCode("");
-    setIsSynced(false);
   }, []);
 
   const handleCodeChange = (newCode: string) => {
     setCode(newCode);
-    setIsSynced(false);
   };
 
   const handleProblemChange = (newProblem: string) => {
     setProblemStatement(newProblem);
-    setIsSynced(false);
   };
 
   const handleUpdateTestCases = (updater: React.SetStateAction<TestCase[]>) => {
     setTestCases(updater);
-    setIsSynced(false);
-  };
-
-  const handleSubmitToAgent = async () => {
-    setIsSyncing(true);
-    try {
-      const activeInputText = activeTestCase ? activeTestCase.input : "";
-      const res = await api.syncContext(sessionId, code, problemStatement, activeInputText);
-      setSessionId(res.session_id);
-      setIsSynced(true);
-
-      const systemNotice: ChatMessage = {
-        id: Date.now().toString() + "_sys",
-        sender: "agent",
-        content: "🚀 **Workspace Synchronized:** Your solution, problem statement, and active test cases are synced. Ask me anything or select an option below!",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        actions: [
-          { id: "a1", label: "🔍 Show Dry Run", actionType: "DRY_RUN" },
-          { id: "a3", label: "⚡ Show Fix", actionType: "SHOW_FIX" },
-          { id: "a4", label: "🚀 Optimal Solution", actionType: "SHOW_OPTIMAL" },
-          { id: "a5", label: "📊 Compare Complexity", actionType: "COMPARE" }
-        ]
-      };
-      setMessages((prev) => [...prev, systemNotice]);
-    } catch (err: any) {
-      const errorMsg: ChatMessage = {
-        id: Date.now().toString() + "_err",
-        sender: "agent",
-        content: `Sync Error: ${err.message || "Failed to sync workspace details."}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        actions: []
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      setIsSyncing(false);
-    }
   };
 
   const handleSendMessage = async (queryText: string) => {
@@ -110,38 +67,35 @@ export default function App() {
     setIsAnalyzing(true);
 
     try {
-      let activeSessionId = sessionId;
+      const activeInputText = activeTestCase ? activeTestCase.input : "";
 
-      if (!activeSessionId || !isSynced) {
-        const activeInputText = activeTestCase ? activeTestCase.input : "";
-        const syncRes = await api.syncContext(activeSessionId, code, problemStatement, activeInputText);
-        activeSessionId = syncRes.session_id;
-        setSessionId(activeSessionId);
-        setIsSynced(true);
-      }
-
-      const analysisData = await api.analyzeConversational(
-        activeSessionId,
+      const analysisData = await api.analyzeSnippet(
+        code,
+        problemStatement,
+        activeInputText,
         queryText
       );
 
       const plan = analysisData.ui_plan;
+
+      const dynamicActions = analysisData.suggested_actions
+        ? analysisData.suggested_actions.map((act: any, idx: number) => ({
+            id: `act_${idx}_${Date.now()}`,
+            label: act.label,
+            actionType: "DRY_RUN",
+            query: act.query
+          }))
+        : [];
       
       const agentMsg: ChatMessage = {
         id: Date.now().toString() + "_agent",
         sender: "agent",
         content: analysisData.chat_response || "No response generated.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        actions: analysisData.intent === "General Chat" ? [] : [
-          { id: "a1", label: "🔍 Show Dry Run", actionType: "DRY_RUN" },
-          { id: "a3", label: "⚡ Show Fix", actionType: "SHOW_FIX" },
-          { id: "a4", label: "🚀 Optimal Solution", actionType: "SHOW_OPTIMAL" },
-          { id: "a5", label: "📊 Compare Complexity", actionType: "COMPARE" }
-        ],
+        actions: dynamicActions,
         uiPlan: plan || undefined
       };
 
-      setCurrentUIPlan(plan || null);
       setMessages((prev) => [...prev, agentMsg]);
     } catch (err: any) {
       const errorMsg: ChatMessage = {
@@ -157,8 +111,8 @@ export default function App() {
     }
   };
 
-  const handleSelectAction = (actionType: ActionType, actionLabel: string) => {
-    handleSendMessage(`[Action Selected: ${actionLabel}] Requesting ${actionType} analysis.`);
+  const handleSelectAction = (_actionType: ActionType, queryOrLabel: string) => {
+    handleSendMessage(queryOrLabel);
   };
 
   return (
@@ -181,16 +135,12 @@ export default function App() {
           setActiveTestCaseId={setActiveTestCaseId}
           isAnalyzing={isAnalyzing}
           activeLine={activeLine}
-          sessionId={sessionId}
+          sessionId={null}
           onClearCode={handleClearCode}
-          onSubmitToAgent={handleSubmitToAgent}
-          isSyncing={isSyncing}
-          isSynced={isSynced}
         />
 
         <RightAgentWindow
           messages={messages}
-          currentUIPlan={currentUIPlan}
           onSendMessage={handleSendMessage}
           onSelectAction={handleSelectAction}
           onViewFullCard={(intent) => setSelectedFullCard(intent)}

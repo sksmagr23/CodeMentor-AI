@@ -50,6 +50,10 @@ class UIPlan(BaseModel):
     components: List[UIComponentIntent] = Field(..., description="List of components planned for rendering.")
     rationale: str = Field(..., description="Concise rationale for this layout choice.")
 
+class SuggestedAction(BaseModel):
+    label: str = Field(..., description="Short button label (e.g. '🔍 Explain Bug Fix', '🚀 Compare Complexity').")
+    query: str = Field(..., description="The query text sent to the agent when clicked.")
+
 class AgentAnalysisResponse(BaseModel):
     intent: str = Field(..., description="The detected user intent: 'General Chat' (greetings, general chat questions), 'Explain Approach' (requests algorithm explanation), 'Debug / Show Fix' (looks for bugs/fixes), 'Optimize Solution' (requests optimized solution), 'Compare Complexity' (requests side-by-side complexity analysis), or 'Dry Run' (requests visual dry run simulation).")
     chat_response: str = Field(..., description="Conversational text response answering the user query. Must explain the reasoning, answer questions, or introduce the visual/interactive cards being rendered.")
@@ -58,6 +62,7 @@ class AgentAnalysisResponse(BaseModel):
     complexity: Optional[ComplexityEstimation] = Field(None, description="Algorithmic complexity estimate. Set to None if intent is General Chat.")
     bug_analysis: Optional[BugAnalysis] = Field(None, description="Logical bug diagnosis and counterexample. Set to None if intent is General Chat.")
     ui_plan: Optional[UIPlan] = Field(None, description="Planned UI components composition. Set to None if intent is General Chat.")
+    suggested_actions: List[SuggestedAction] = Field(default_factory=list, description="Dynamic suggested contextual actions.")
 
 def load_dotenv():
     for path in (".env", "backend/.env", "../.env"):
@@ -131,6 +136,44 @@ USER CHAT INQUIRY:
             
             raw_json = json.loads(response.text)
             validated_response = AgentAnalysisResponse.model_validate(raw_json)
+            
+            if validated_response.ui_plan and validated_response.ui_plan.components:
+                for comp in validated_response.ui_plan.components:
+                    if comp.type == "problem_summary" and validated_response.problem_understanding:
+                        comp.props = {
+                            "title": validated_response.problem_understanding.title or "DSA Problem Summary",
+                            "difficulty": validated_response.problem_understanding.difficulty or "Medium",
+                            "statement": validated_response.problem_understanding.statement or "",
+                            "constraints": validated_response.problem_understanding.constraints or []
+                        }
+                    elif comp.type == "approach_card" and validated_response.user_approach:
+                        comp.props = {
+                            "algorithm": validated_response.user_approach.algorithm or "Custom Solution",
+                            "timeComplexity": validated_response.complexity.time if validated_response.complexity else "O(N)",
+                            "spaceComplexity": validated_response.complexity.space if validated_response.complexity else "O(1)",
+                            "rationale": validated_response.user_approach.complexity_rationale or (validated_response.complexity.rationale if validated_response.complexity else ""),
+                            "isOptimal": validated_response.user_approach.correctness_classification.lower() == "optimal"
+                        }
+                    elif comp.type == "bug_analysis" and validated_response.bug_analysis:
+                        comp.props = {
+                            "issue": validated_response.bug_analysis.issue or "",
+                            "fix": validated_response.bug_analysis.fix or "",
+                            "counterexampleInput": validated_response.bug_analysis.counterexample_input or "",
+                            "expectedOutput": validated_response.bug_analysis.expected_output or "",
+                            "actualOutput": validated_response.bug_analysis.actual_output or ""
+                        }
+                    elif comp.type == "solution_comparison" and validated_response.user_approach:
+                        comp.props = {
+                            "userApproach": validated_response.user_approach.algorithm or "Current Solution",
+                            "userTime": validated_response.complexity.time if validated_response.complexity else "O(N)",
+                            "userSpace": validated_response.complexity.space if validated_response.complexity else "O(1)",
+                            "optimalApproach": "Optimal Solution",
+                            "optimalTime": "O(N)",
+                            "optimalSpace": "O(N)",
+                            "correctedCode": validated_response.bug_analysis.corrected_code if validated_response.bug_analysis else "",
+                            "optimalCode": validated_response.bug_analysis.corrected_code if validated_response.bug_analysis else ""
+                        }
+            
             return validated_response
             
         except Exception as e:

@@ -162,32 +162,15 @@ def get_session_context(session_id: str) -> tuple:
             
     return "", "", ""
 
-@router.post("/sync", response_model=ContextSyncResponse)
-async def sync_new_session(req: ContextSyncRequest):
-    """Registers a new workspace context, creating a unique session ID."""
-    session_id = str(uuid.uuid4())
-    save_session_context(session_id, req.code, req.problem_statement, req.test_input)
-    return ContextSyncResponse(session_id=session_id, message="Workspace context synced successfully.")
-
-@router.post("/{session_id}/sync", response_model=ContextSyncResponse)
-async def sync_existing_session(session_id: str, req: ContextSyncRequest):
-    """Updates the active workspace context for an existing session ID."""
-    save_session_context(session_id, req.code, req.problem_statement, req.test_input)
-    return ContextSyncResponse(session_id=session_id, message="Workspace context updated successfully.")
-
 @router.post("/{session_id}/analyze", response_model=AgentAnalysisResponse)
-async def analyze_session(session_id: str, req: ConversationalQueryRequest):
+async def analyze_session(session_id: str, req: AnalysisRequest):
     """Invokes the Agent Planner to analyze conversational query using the active synced workspace context."""
-    code, problem_statement, test_input = get_session_context(session_id)
-    if not code and not problem_statement:
-         raise HTTPException(status_code=400, detail="No active synced workspace context found. Please sync your details first.")
-         
     try:
         planner = AgentPlanner()
         analysis = planner.plan_session(
-            code=code,
-            problem_statement=problem_statement,
-            test_input=test_input,
+            code=req.code,
+            problem_statement=req.problem_statement,
+            test_input=req.test_input,
             query=req.query
         )
         return analysis
