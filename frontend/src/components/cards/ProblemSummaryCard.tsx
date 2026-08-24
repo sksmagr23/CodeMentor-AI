@@ -11,15 +11,10 @@ interface ProblemSummaryCardProps {
 }
 
 export const ProblemSummaryCard: React.FC<ProblemSummaryCardProps> = ({
-  title = "Two Sum",
-  difficulty = "Easy",
-  statement = "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
-  constraints = [
-    "2 <= nums.length <= 10^4",
-    "-10^9 <= nums[i] <= 10^9",
-    "-10^9 <= target <= 10^9",
-    "Only one valid answer exists."
-  ],
+  title = "",
+  difficulty = "Medium",
+  statement = "",
+  constraints = [],
   inputBounds,
   onViewFull
 }) => {

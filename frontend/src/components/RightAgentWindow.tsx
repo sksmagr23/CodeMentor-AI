@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import type { ChatMessage, ActionType, UIComponentIntent } from "../types/ui";
 import { DynamicWorkspace } from "./DynamicWorkspace";
 import { Bot, User, Sparkles, Play } from "lucide-react";
+import { renderMarkdown } from "../utils/markdown";
 
 interface RightAgentWindowProps {
   messages: ChatMessage[];
@@ -71,13 +72,13 @@ export const RightAgentWindow: React.FC<RightAgentWindowProps> = ({
             </div>
 
             <div
-              className={`p-3.5 text-xs leading-relaxed max-w-[95%] whitespace-pre-wrap ${
+              className={`p-3.5 text-xs leading-relaxed max-w-[95%] ${
                 msg.sender === "user"
-                  ? "bg-emerald-600 text-white border border-emerald-500"
-                  : "bg-[#18181b] text-gray-200 border border-[#27272a] font-mono"
+                  ? "bg-emerald-600 text-white border border-emerald-500 whitespace-pre-wrap"
+                  : "bg-[#18181b] text-gray-200 border border-[#27272a] font-sans"
               }`}
             >
-              {msg.content}
+              {msg.sender === "user" ? msg.content : renderMarkdown(msg.content)}
             </div>
 
             {/* Contextual Action Chips */}

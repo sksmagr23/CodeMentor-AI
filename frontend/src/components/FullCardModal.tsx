@@ -6,6 +6,7 @@ import { ApproachComplexityCard } from "./cards/ApproachComplexityCard";
 import { BugAnalysisCard } from "./cards/BugAnalysisCard";
 import { DryRunMarkdownCard } from "./cards/DryRunMarkdownCard";
 import { SolutionComparisonCard } from "./cards/SolutionComparisonCard";
+import { CodeViewerCard } from "./cards/CodeViewerCard";
 
 interface FullCardModalProps {
   intent: UIComponentIntent | null;
@@ -29,6 +30,8 @@ export const FullCardModal: React.FC<FullCardModalProps> = ({ intent, onClose })
         return <BugAnalysisCard {...props} />;
       case "dry_run_markdown":
         return <DryRunMarkdownCard {...props} />;
+      case "code_viewer":
+        return <CodeViewerCard {...props} />;
       case "solution_comparison":
       case "corrected_code":
       case "optimization_card":

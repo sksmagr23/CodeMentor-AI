@@ -11,11 +11,11 @@ interface BugAnalysisCardProps {
 }
 
 export const BugAnalysisCard: React.FC<BugAnalysisCardProps> = ({
-  issue = "Missing Base Case in Recursion / Loop Boundary Overflow",
-  fix = "Add base condition `if (n <= 1) return n;` to terminate recursion before negative values.",
-  counterexampleInput = "nums = [3, 2, 4], target = 6",
-  expectedOutput = "[1, 2]",
-  actualOutput = "Stack Overflow / Segmentation Fault",
+  issue = "",
+  fix = "",
+  counterexampleInput = "",
+  expectedOutput = "",
+  actualOutput = "",
   onViewFull
 }) => {
   return (

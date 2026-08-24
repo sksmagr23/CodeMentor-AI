@@ -11,10 +11,10 @@ interface ApproachComplexityCardProps {
 }
 
 export const ApproachComplexityCard: React.FC<ApproachComplexityCardProps> = ({
-  algorithm = "Nested Loop Brute Force",
-  timeComplexity = "O(N²)",
-  spaceComplexity = "O(1)",
-  rationale = "The solution uses two nested loops to check all pairs of elements. This causes quadratic time growth as N increases.",
+  algorithm = "",
+  timeComplexity = "",
+  spaceComplexity = "",
+  rationale = "",
   isOptimal = false,
   onViewFull
 }) => {

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Sparkles, Maximize2, Minimize2, Terminal } from "lucide-react";
+import { renderMarkdown } from "../../utils/markdown";
 
 interface DryRunMarkdownCardProps {
   markdown?: string;
@@ -15,136 +16,6 @@ export const DryRunMarkdownCard: React.FC<DryRunMarkdownCardProps> = ({
   onViewFull
 }) => {
   const [isZoomed, setIsZoomed] = useState(false);
-
-  const renderMarkdown = (text: string) => {
-    if (!text) return null;
-
-    const lines = text.split("\n");
-    const elements: React.ReactNode[] = [];
-    let inTable = false;
-    let tableHeaders: string[] = [];
-    let tableRows: string[][] = [];
-
-    const flushTable = (key: string) => {
-      if (tableHeaders.length > 0 || tableRows.length > 0) {
-        elements.push(
-          <div key={`table-${key}`} className="overflow-x-auto my-3 border border-[#27272a] rounded-none">
-            <table className="min-w-full text-xs font-mono border-collapse bg-[#121214]">
-              <thead>
-                <tr className="border-b border-[#27272a] bg-[#18181b]">
-                  {tableHeaders.map((h, i) => (
-                    <th key={i} className="px-3 py-2 text-left text-[11px] font-bold text-gray-300 uppercase tracking-wider border-r border-[#27272a] last:border-r-0">
-                      {h.trim()}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {tableRows.map((row, idx) => (
-                  <tr key={idx} className="border-b border-[#27272a] last:border-b-0 hover:bg-[#18181b]/50">
-                    {row.map((cell, i) => (
-                      <td key={i} className="px-3 py-2 text-gray-300 border-r border-[#27272a] last:border-r-0 whitespace-nowrap">
-                        {cell.trim()}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-        tableHeaders = [];
-        tableRows = [];
-        inTable = false;
-      }
-    };
-
-    let inCodeBlock = false;
-    let codeContent: string[] = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      if (line.trim().startsWith("```")) {
-        if (inCodeBlock) {
-          elements.push(
-            <pre key={`code-${i}`} className="p-3 bg-[#121214] border border-[#27272a] text-[11px] font-mono text-emerald-400 overflow-x-auto my-2 whitespace-pre leading-relaxed">
-              {codeContent.join("\n")}
-            </pre>
-          );
-          codeContent = [];
-          inCodeBlock = false;
-        } else {
-          inCodeBlock = true;
-        }
-        continue;
-      }
-
-      if (inCodeBlock) {
-        codeContent.push(line);
-        continue;
-      }
-
-      if (line.trim().startsWith("|")) {
-        if (line.includes("---")) {
-          continue;
-        }
-        const cells = line.split("|").slice(1, -1);
-        if (!inTable) {
-          inTable = true;
-          tableHeaders = cells;
-        } else {
-          tableRows.push(cells);
-        }
-        continue;
-      } else {
-        if (inTable) {
-          flushTable(i.toString());
-        }
-      }
-
-      if (line.trim().startsWith("###")) {
-        elements.push(
-          <h4 key={i} className="text-xs font-bold font-mono text-indigo-300 mt-4 mb-2 uppercase tracking-wide border-b border-[#27272a] pb-1">
-            {line.replace("###", "").trim()}
-          </h4>
-        );
-        continue;
-      }
-      if (line.trim().startsWith("##")) {
-        elements.push(
-          <h3 key={i} className="text-sm font-bold font-mono text-emerald-400 mt-4 mb-2 uppercase tracking-wide border-b border-[#27272a] pb-1">
-            {line.replace("##", "").trim()}
-          </h3>
-        );
-        continue;
-      }
-
-      if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
-        elements.push(
-          <div key={i} className="flex items-start space-x-2 pl-2 my-1 text-xs text-gray-300">
-            <span className="text-emerald-400 font-bold font-mono select-none">•</span>
-            <span>{line.substring(2).trim()}</span>
-          </div>
-        );
-        continue;
-      }
-
-      if (line.trim()) {
-        elements.push(
-          <p key={i} className="text-xs text-gray-300 leading-relaxed my-1.5 font-mono">
-            {line}
-          </p>
-        );
-      }
-    }
-
-    if (inTable) {
-      flushTable("final");
-    }
-
-    return elements;
-  };
 
   const activeContent = renderMarkdown(markdown);
 
@@ -178,8 +49,8 @@ export const DryRunMarkdownCard: React.FC<DryRunMarkdownCardProps> = ({
         </div>
       </div>
 
-      <div className="p-5 space-y-4">
-        <p className="text-xs text-gray-400 leading-relaxed font-sans border-l-2 border-indigo-500 pl-3 italic bg-[#121214]/50 py-1.5">
+      <div className="p-5 space-y-4 font-sans">
+        <p className="text-xs text-gray-400 leading-relaxed border-l-2 border-indigo-500 pl-3 italic bg-[#121214]/50 py-1.5 font-sans">
           {description}
         </p>
 

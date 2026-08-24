@@ -14,27 +14,14 @@ interface SolutionComparisonCardProps {
 }
 
 export const SolutionComparisonCard: React.FC<SolutionComparisonCardProps> = ({
-  userApproach = "Nested Loop Brute Force",
-  userTime = "O(N²)",
-  userSpace = "O(1)",
-  optimalApproach = "Hash Map Single-Pass Lookup",
-  optimalTime = "O(N)",
-  optimalSpace = "O(N)",
-  correctedCode,
-  optimalCode = `class Solution {
-public:
-    vector<int> twoSum(vector<int>& nums, int target) {
-        unordered_map<int, int> mp;
-        for (int i = 0; i < nums.size(); i++) {
-            int complement = target - nums[i];
-            if (mp.count(complement)) {
-                return {mp[complement], i};
-            }
-            mp[nums[i]] = i;
-        }
-        return {};
-    }
-};`,
+  userApproach = "",
+  userTime = "",
+  userSpace = "",
+  optimalApproach = "",
+  optimalTime = "",
+  optimalSpace = "",
+  correctedCode = "",
+  optimalCode = "",
   onViewFull
 }) => {
   return (

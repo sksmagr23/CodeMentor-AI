@@ -5,6 +5,7 @@ import { ApproachComplexityCard } from "./cards/ApproachComplexityCard";
 import { BugAnalysisCard } from "./cards/BugAnalysisCard";
 import { DryRunMarkdownCard } from "./cards/DryRunMarkdownCard";
 import { SolutionComparisonCard } from "./cards/SolutionComparisonCard";
+import { CodeViewerCard } from "./cards/CodeViewerCard";
 import { Layers } from "lucide-react";
 
 interface DynamicWorkspaceProps {
@@ -43,6 +44,9 @@ export const DynamicWorkspace: React.FC<DynamicWorkspaceProps> = ({ uiPlan, onVi
 
       case "dry_run_markdown":
         return <DryRunMarkdownCard key={index} {...props} onViewFull={handleViewFull} />;
+
+      case "code_viewer":
+        return <CodeViewerCard key={index} {...props} onViewFull={handleViewFull} />;
 
       case "solution_comparison":
       case "corrected_code":
