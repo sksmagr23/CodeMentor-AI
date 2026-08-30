@@ -1,110 +1,84 @@
-import React from "react";
-import { GitCompare, CheckCircle2, ArrowRight, Maximize2 } from "lucide-react";
+import React from 'react';
+import type { SolutionComparisonData } from '../../types/dsa';
+import { GitCompare, CheckCircle2 } from 'lucide-react';
+import { renderSafeText } from '../../utils/safeText';
 
-interface SolutionComparisonCardProps {
-  userApproach?: string;
-  userTime?: string;
-  userSpace?: string;
-  optimalApproach?: string;
-  optimalTime?: string;
-  optimalSpace?: string;
-  correctedCode?: string;
-  optimalCode?: string;
-  onViewFull?: () => void;
-}
-
-export const SolutionComparisonCard: React.FC<SolutionComparisonCardProps> = ({
-  userApproach = "",
-  userTime = "",
-  userSpace = "",
-  optimalApproach = "",
-  optimalTime = "",
-  optimalSpace = "",
-  correctedCode = "",
-  optimalCode = "",
-  onViewFull
+export const SolutionComparisonCard: React.FC<SolutionComparisonData> = ({
+  user_approach,
+  user_time,
+  user_space,
+  optimal_approach,
+  optimal_time,
+  optimal_space,
+  key_differences,
+  recommendation,
 }) => {
   return (
-    <div className="bg-[#18181b] border border-[#27272a] rounded-none overflow-hidden flex flex-col mb-4">
-      <div className="h-9 bg-[#131316] border-b border-[#27272a] flex items-center justify-between px-3">
-        <div className="flex items-center space-x-2">
-          <GitCompare className="w-4 h-4 text-emerald-400" />
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-300">
-            Solution & Complexity Comparison
-          </span>
+    <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-5 shadow-lg my-3 text-slate-200">
+      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-3 mb-4">
+        <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+          <GitCompare className="w-4 h-4" />
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            Optimization Available
-          </span>
-          {onViewFull && (
-            <button
-              onClick={onViewFull}
-              className="flex items-center space-x-1 text-[11px] font-mono px-2 py-0.5 bg-[#27272a] hover:bg-[#3f3f46] text-emerald-300 border border-[#3f3f46] transition cursor-pointer"
-            >
-              <Maximize2 className="w-3 h-3" />
-              <span>View Full</span>
-            </button>
-          )}
+        <div>
+          <h3 className="font-['Space_Grotesk'] text-base font-semibold text-slate-100">Approach Comparison</h3>
+          <span className="text-xs text-slate-400">Side-by-side trade-off evaluation</span>
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Comparison Matrix */}
-        <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-          {/* User Approach Column */}
-          <div className="bg-[#121214] p-3 border border-[#27272a] space-y-2">
-            <span className="text-[10px] font-bold uppercase text-amber-400 block border-b border-[#27272a] pb-1">
-              Your Current Approach
-            </span>
-            <div className="space-y-1 text-gray-300">
-              <p className="font-semibold text-white">{userApproach}</p>
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-gray-500">Time:</span>
-                <span className="text-amber-400 font-bold">{userTime}</span>
-              </div>
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-gray-500">Space:</span>
-                <span className="text-gray-300 font-bold">{userSpace}</span>
-              </div>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800">
+          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            Your Approach
           </div>
-
-          {/* Optimal Approach Column */}
-          <div className="bg-[#121214] p-3 border border-emerald-500/30 space-y-2">
-            <span className="text-[10px] font-bold uppercase text-emerald-400 border-b border-[#27272a] pb-1 flex items-center justify-between">
-              <span>Optimal Approach</span>
-              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+          <div className="text-sm font-medium text-slate-200 mb-2">{renderSafeText(user_approach)}</div>
+          <div className="flex gap-2 font-['JetBrains_Mono'] text-xs">
+            <span className="px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">
+              Time: {renderSafeText(user_time)}
             </span>
-            <div className="space-y-1 text-gray-300">
-              <p className="font-semibold text-white">{optimalApproach}</p>
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-gray-500">Time:</span>
-                <span className="text-emerald-400 font-bold">{optimalTime}</span>
-              </div>
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-gray-500">Space:</span>
-                <span className="text-indigo-400 font-bold">{optimalSpace}</span>
-              </div>
-            </div>
+            <span className="px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">
+              Space: {renderSafeText(user_space)}
+            </span>
           </div>
         </div>
 
-        {/* Code Viewer (Corrected / Optimal Code) */}
-        {(correctedCode || optimalCode) && (
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider flex items-center space-x-1">
-                <ArrowRight className="w-3 h-3 text-emerald-400" />
-                <span>{correctedCode ? "Corrected Code Fix" : "Optimal Solution Code"}</span>
-              </span>
-            </div>
-            <pre className="bg-[#121214] p-3 border border-[#27272a] font-mono text-xs text-emerald-300 overflow-x-auto leading-relaxed">
-              <code>{correctedCode || optimalCode}</code>
-            </pre>
+        <div className="p-3.5 rounded-lg bg-emerald-950/20 border border-emerald-500/30">
+          <div className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">
+            Optimal Approach
           </div>
-        )}
+          <div className="text-sm font-medium text-slate-100 mb-2">{renderSafeText(optimal_approach)}</div>
+          <div className="flex gap-2 font-['JetBrains_Mono'] text-xs">
+            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+              Time: {renderSafeText(optimal_time)}
+            </span>
+            <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+              Space: {renderSafeText(optimal_space)}
+            </span>
+          </div>
+        </div>
       </div>
+
+      {key_differences && key_differences.length > 0 && (
+        <div className="mb-3 text-xs">
+          <div className="font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Key Differences:</div>
+          <ul className="space-y-1 text-slate-300">
+            {key_differences.map((diff, idx) => (
+              <li key={idx} className="flex items-start gap-1.5">
+                <span className="text-purple-400">•</span>
+                <span>{renderSafeText(diff)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {recommendation && (
+        <div className="p-3 rounded-lg bg-purple-950/20 border border-purple-500/20 text-xs">
+          <div className="font-semibold text-purple-400 mb-1 flex items-center gap-1">
+            <CheckCircle2 className="w-3.5 h-3.5" /> Recommendation
+          </div>
+          <p className="text-slate-300 leading-relaxed">{renderSafeText(recommendation)}</p>
+        </div>
+      )}
     </div>
   );
 };

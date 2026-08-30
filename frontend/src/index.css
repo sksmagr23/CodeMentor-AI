@@ -2,25 +2,15 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "DM Sans", system-ui, sans-serif;
-  --font-display: "Space Grotesk", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-heading: 'Space Grotesk', sans-serif;
 }
 
 body {
   font-family: var(--font-sans);
-}
-
-h1, h2, h3, h4, h5, h6, .font-display {
-  font-family: var(--font-display);
-}
-
-.font-mono {
-  font-family: var(--font-mono);
-}
-
-.active-execution-line {
-  border-left: 2px solid #eab308 !important;
+  background-color: #0B0F17;
+  color: #F8FAFC;
 }
 
 ::-webkit-scrollbar {
@@ -29,14 +19,14 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e1e1e;
+  background: #0B0F17;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #424242;
-  border-radius: 3px;
+  background: #1E293B;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4f4f4f;
+  background: #334155;
 }

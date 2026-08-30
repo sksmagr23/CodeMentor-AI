@@ -1,175 +1,179 @@
-# CodeMentor AI Agent
+# CodeMentor AI⚡
 
-An interactive educational DSA coding assistant that helps you analyze, debug, optimize, and run text-based step-by-step walkthroughs of your solutions using an integrated, language-agnostic Generative UI flow.
+> **An interactive, conversational Data Structures & Algorithms (DSA) mentor with dynamic Generative UI, visual dry-run illustrations, and persistent session memory.**
 
----
-
-## 💡 The Core Concept
-
-When practicing Data Structures and Algorithms (DSA), developers often face two distinct friction points:
-1. **Cluttered workspaces** where compilers, test cases, and chat logs are spread across disconnected windows.
-2. **Generic AI responses** that dump huge walls of markdown text in a tiny chat bubble instead of offering structured, visual, and context-aware explanations.
-
-**CodeMentor AI** resolves this by pairing a language-agnostic code editor workspace with a **Generative UI Agent Chat**. Rather than returning generic text blocks, the agent determines the user's intent and dynamically plans a structured interface. The relevant educational cards (Dry Runs, Code Viewers, Bug Diagnoses) are rendered **inline directly inside the chat thread**, chronological and stuck to the specific conversation step that created them.
+**CodeMentor AI** acts like an experienced tech lead or algorithms coach pair-programming right beside you:
+- **Conversational & Non-Intrusive**: You chat naturally in real time. The chat interface is persistent and never disappears.
+- **Generative Visual UI**: Instead of raw text or messy JSON, CodeMentor dynamically plans and renders rich visual cards directly in the chat stream: interactive bug breakdowns, side-by-side complexity matrices, failing counterexamples, and illustrated dry-run diagrams.
+- **Conceptual & Language-Agnostic**: It does not rely on rigid compilers. It analyzes the pure algorithmic logic of your code in C++, Python, Java, JavaScript, Go, or Rust.
+- **Persistent Context**: You submit your problem and draft code once; CodeMentor remembers your workspace throughout the session so you can ask follow-ups like *"Why does it fail on duplicates?"* or *"Show me the optimal solution"* without re-pasting anything.
 
 ---
 
-## 🛠️ Architecture & Flow
+## Key Features
 
-The system is split into a Python FastAPI backend and a React/TypeScript frontend. It focuses on conversational AI mentoring and dynamic, selective layout generation.
+### 1. Comprehensive Solution Analysis
+Submit your problem and draft code in any major programming language. CodeMentor AI evaluates:
+- **Algorithm & Pattern Classification**: Recognizes two-pointer, sliding window, dynamic programming, backtracking, monotonic stack, etc.
+- **Correctness Classification**: Evaluates whether your solution is:
+  - `Correct & Optimal`
+  - `Correct but Suboptimal`
+  - `Right Idea, Buggy Implementation`
+  - `Incorrect Approach`
+- **Strengths & Limitations**: Identifies what works well and points out hidden traps or memory inefficiencies.
+
+### 2. Pinpoint Bug Diagnosis & Failing Counterexamples
+When code fails:
+- **Root Cause Explanation**: Explains exactly *why* the code fails conceptually (e.g., integer overflow, off-by-one pointer error, missing edge case for negative numbers).
+- **Failing Counterexample**: Provides a minimal failing test case and contrasts **Your Code's Output** vs. **Expected Output**.
+- **Targeted Fix**: Explains how to correct the logic without rewriting everything from scratch.
+
+### 3. On-Demand Visual Dry Runs (AI Illustrated)
+Instead of manually tracing loops on pencil and paper:
+- Request a dry run anytime.
+- CodeMentor AI generates an educational diagram using **Gemini Multimodal Image Generation** paired with an SVG vector fallback.
+- Visualizes array indices, pointer movements, recursion stacks, and hash map states.
+- Includes a full-screen **Lightbox Modal** with download capabilities for offline revision.
+
+### 4. Guided Optimizations & Side-by-Side Comparisons
+- **Optimal Transition**: Learn how to optimize a brute-force $O(N^2)$ solution into an optimal $O(N)$ or $O(N \log N)$ approach.
+- **Comparison Matrix**: View a side-by-side comparison of **Your Approach** vs. **Optimal Approach** detailing time complexity, auxiliary memory, and algorithmic trade-offs.
+
+### 5. In-Depth Complexity Derivation
+- Asymptotic time and space complexity with step-by-step mathematical reasoning.
+- Bottleneck identification (e.g., nested loop overhead or auxiliary hash table memory).
+- Best-case, average-case, and worst-case bounds.
+
+### 6. Click Contextual Action Chips
+- After every response, CodeMentor presents 1–3 smart next-action chips (e.g., `Run Dry Run`, `Debug Edge Cases`, `Show Optimal`, `Compare Approaches`).
+- Clicking any action executes the query in the **same active session** without repetitive typing.
+
+### 7. Multi-Session History Management
+- All sessions are automatically saved to MongoDB.
+- Open the **Session History Drawer** to switch between different problems you've worked on, inspect message history, or clean up past sessions.
+- Browser `localStorage` recovery ensures that refreshing the page never loses your active workspace.
+
+---
+
+## Core Architecture & Design Philosophy
 
 ```mermaid
 graph TD
-    A[Monaco Left Panel: Code / Problem / Test Inputs] -->|Unified Stateless Payload| B[POST /api/v1/sessions/analyze]
-    B --> C[FastAPI Session Route]
-    C --> D[Agent Planner: System Prompts & GenAI Config]
-    D -->|Gemini 2.5 Flash Structured JSON| E[AgentAnalysisResponse]
-    E --> F{Intent Classification}
-    F -->|General Chat / Greetings| G[Chat Text Only]
-    F -->|Debug / Dry Run / Optimize| H[Selective Component props mapping]
-    H -->|Auto-populate Card props| I[FastAPI JSON response]
-    I --> J[React Chat Feed]
-    J -->|Render Chat Bubble| K[Shared Markdown Renderer]
-    J -->|Render Sticky Cards| L[Dynamic Workspace Card Components]
+    A[React Client / Vite] -->|POST /api/query| B[FastAPI Gateway]
+    A -->|POST /api/sessions/context| B
+    B --> C[DSAPlanner Orchestrator]
+    
+    C -->|Fetch Active Context| D[(MongoDB: dsa_sessions)]
+    C -->|Check Missing Context| E{Context Present?}
+    
+    E -->|No| F[Return ProblemSetupForm intent]
+    E -->|Yes| G[Execute Targeted DSA Tool]
+    
+    G --> H[Google ADK / Gemini 2.5 Flash]
+    G -->|On-demand Dry Run| I[Gemini 2.5 Flash Image / SVG Engine]
+    
+    G --> J[Format Intent + Structured Data + Next Actions]
+    J -->|Persist Turn| K[(MongoDB: conversation_history)]
+    J -->|JSON Response| A
+    
+    A --> L[Centralized Component Registry]
+    L --> M[Render Verified Dynamic Cards in Chat]
 ```
 
-### 🔄 Interactive Flow Steps
-1. **Workspace Inputs**: The user inputs their solution code (in *any* language), the DSA problem statement, and active sample test inputs on the Left Panel.
-2. **Unified API Request**: When the user chats, the query text is sent inline along with the workspace code variables directly to the backend `/api/v1/sessions/analyze` endpoint.
-3. **Conversational Intent Routing**:
-   * Simple greetings (e.g., `"hi"`) or general conceptual queries (e.g., `"What is dynamic programming?"`) are handled via conversational chat with no workspace component rendering.
-   * Debugging, dry-run, or optimization inquiries trigger Gemini 2.5 Flash to generate a type-safe visual `UIPlan` containing only the relevant cards.
-4. **Selective Component Planning**: The agent plans only the UI components that directly answer the query:
-   * `dry_run_markdown`: Detailed narrative step-by-step code walkthroughs.
-   * `code_viewer`: Code solutions/templates with clipboard copy support.
-   * `bug_analysis`: Bug diagnosis and failing counterexample parameter blocks.
-   * `solution_comparison`: Side-by-side time/space complexity matrix comparison.
-5. **Dynamic Actions**: The agent dynamically generates suggested follow-up chips based on the active state. Clicking a chip submits the agent-configured query back to the thread.
-6. **Sticky Visual Layout**: Generated workspace components are rendered **inline inside the chat bubble thread**, chronological and stuck to the specific agent response that yielded them.
+### Architectural Principles
+
+1. **Non-Compiler Conceptual Approach**:
+   No heavy execution sandboxes (g++, python sub-processes, or Docker containers). The assistant evaluates conceptual algorithm semantics, which avoids environmental discrepancies and enables instant response across any programming language.
+
+2. **Controlled Generative UI**:
+   The LLM **never** emits raw HTML or executable JSX. Instead, the backend enforces a controlled structured responses, while frontend safely maps each type to a registered React component:
+   - `problem_setup_form` $\rightarrow$ Interactive setup form
+   - `problem_summary` $\rightarrow$ Problem statement, pattern, constraints card
+   - `approach_card` $\rightarrow$ Algorithmic logic, data structures, complexity badges
+   - `bug_analysis_card` $\rightarrow$ Failure cause, failing condition, fix snippet
+   - `counterexample_card` $\rightarrow$ Input, actual vs. expected output
+   - `dry_run_image` $\rightarrow$ Step trace + visual diagram with lightbox
+   - `optimization_card` $\rightarrow$ Improved algorithmic approach & code
+   - `solution_comparison_card` $\rightarrow$ Side-by-side trade-off matrix
+   - `code_viewer` $\rightarrow$ Formatted snippet with syntax highlight & code copy
+   - `complexity_card` $\rightarrow$ Code complexity & bottleneck analysis
 
 ---
 
-## ✨ Features
+## Tech Stack
 
-### 1. Split-Screen Layout
-* **Left Panel**: Tabbed interface featuring:
-  * **Monaco Editor**: A fully functional code editor supporting syntax highlighting and editing.
-  * **Problem Description**: Simple text area to input the target LeetCode or DSA problem description.
-  * **Test Cases**: Interface to manage multiple sample test inputs.
-* **Right Panel**: A scrolling chronological conversational thread that houses the agent chat, visual output cards, and contextual actions.
-
-### 2. Generative UI Visual Cards
-* **Educational Dry Run Walkthrough (`dry_run_markdown`)**: Narrative text-based trace simulating indices, values, loop checks, and recursion frames step-by-step.
-* **Bug Diagnosis & Counterexample (`bug_analysis`)**: Highlights the logical bug, recommends a code fix, and provides failing inputs side-by-side (Failing input, Expected, Actual).
-* **Code Viewer Snippet (`code_viewer`)**: Formatted code container supporting syntax highlighted templates with inline copy-to-clipboard buttons.
-* **Complexity Matrix (`solution_comparison`)**: Displays a side-by-side complexity grid comparing the user's current approach with the optimal standard solution.
-
-### 3. Dynamic Contextual Action Chips
-* Suggested actions are generated in real-time by the AI based on the conversation context (e.g. suggesting `"🔍 Run Dry Run"` after a bug diagnosis, or `"🚀 Show Optimal Solution"` after analyzing a brute force approach).
-
-### 4. Native Markdown & Styling Engine
-* Built-in markdown-to-React component parser that formats bold text, bulleted lists, headers, inline tags, and blocks.
-* Typography themes using **Space Grotesk** (display headings), **DM Sans** (body text), and **JetBrains Mono** (code components).
+| Layer | Technologies |
+| :--- | :--- |
+| **Backend** | **FastAPI** |
+| **Agent Engine** | **Google ADK**, **Google GenAI SDK** |
+| **Database** | **MongoDB** |
+| **Data Validation** | **Pydantic** |
+| **Frontend** | **React (Vite)**, **TypeScript**, **Tailwind CSS** |
 
 ---
 
-## 💻 Tech Stack
+## Setup Guide
 
-### Backend
-* **Python**: Core programming language.
-* **FastAPI**: Modern, high-performance web framework for APIs.
-* **Uvicorn**: Lightning-fast ASGI server implementation.
-* **Google GenAI SDK**: Interfaces directly with Gemini models (`gemini-2.5-flash`) with structured schema definitions.
-* **Pydantic**: Data validation and settings management using Python type annotations.
+### Prerequisites
 
-### Frontend
-* **React**: Component-based UI library.
-* **TypeScript**: Static type definitions.
-* **Vite**: Ultra-fast frontend build tooling.
-* **Tailwind CSS v4**: Utility-first CSS framework.
-* **Monaco Editor**: High-quality browser-based code editor engine.
-* **Lucide React**: Clean, lightweight interface icons.
+- **Python 3.10+** (Python 3.12 recommended)
+- **Node.js 18+** & **npm**
+- **MongoDB** running locally (`mongodb://localhost:27017`) or a free MongoDB Atlas connection string
+- A **Gemini API Key** from [Google AI Studio](https://aistudio.google.com/)
 
 ---
 
-## 📂 Repository Layout
+### 1. Configure Backend
 
+```bash
+cd CodeMentor-AI
+
+# Create and activate Python virtual environment
+# Windows:
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+
+# Linux / macOS:
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies
+pip install -r backend/requirements.txt
 ```
-backend/
-├── agents/              # Agent Planning & Prompt Configuration
-│   ├── tool.py          # Google ADK tool decoration wrapper
-│   ├── prompts.py       # Consolidated detailed system prompts
-│   └── planner.py       # Gemini API planner & post-processing props mapper
-├── app/
-│   ├── main.py          # FastAPI app server entrypoint
-│   ├── config.py        # Environment configurations
-│   └── schemas/
-│       └── analysis.py  # Standalone request/response schemas
-├── api/routes/
-│   └── sessions.py      # Session Analysis routing endpoints
-└── execution/
-    └── test_agent.py    # E2E verification of analysis and routing
-frontend/
-├── src/
-│   ├── components/      # UI Layout & Cards Components
-│   │   ├── cards/
-│   │   │   ├── BugAnalysisCard.tsx
-│   │   │   ├── CodeViewerCard.tsx
-│   │   │   ├── DryRunMarkdownCard.tsx
-│   │   │   ├── ProblemSummaryCard.tsx
-│   │   │   └── SolutionComparisonCard.tsx
-│   │   ├── DynamicWorkspace.tsx
-│   │   └── RightAgentWindow.tsx
-│   ├── utils/
-│   │   └── markdown.tsx # Shared Markdown Preview Renderer
-│   ├── types/
-│   │   └── ui.ts        # Dynamic actions and component types
-│   ├── App.tsx          # Main workspace coordinator
-│   └── index.css        # Font imports and theme classes
+
+Create or verify `backend/.env`:
+```env
+GEMINI_API_KEY=
+MONGODB_URL=
+DATABASE_NAME=
 ```
+
+Start the FastAPI backend server:
+```bash
+python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+```
+- **API Base URL**: `http://localhost:8000/api`
+- **Interactive Swagger Docs**: `http://localhost:8000/docs`
 
 ---
 
-## 🚀 Quick Start & Verification
+### 2. Configure Frontend
 
-### 📋 Prerequisites
-* **Python 3.10+**
-* **Node.js 18+**
-* **Google Gemini API Key** configured in your environment.
-
-### 1. Setup Backend
-1. Navigate to the project root and create a virtual environment:
-   ```bash
-   python -m venv venv
-   # Activate on Windows:
-   .\venv\Scripts\activate
-   # Activate on Unix:
-   source venv/bin/activate
-   ```
-2. Install Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Configure your API key. Create a `.env` file in the root:
-   ```env
-   GEMINI_API_KEY="your-gemini-api-key-here"
-   ```
-
-### 2. Verify Backend Planning & Routing
-Run E2E agent planner tests:
-```powershell
-python backend/execution/test_agent.py
-```
-
-### 3. Start Backend API Server
-```powershell
-uvicorn backend.app.main:app --reload
-```
-
-### 4. Setup & Start Frontend React Client
-```powershell
-cd frontend
+```bash
+cd CodeMentor-AI/frontend
 npm install
+```
+
+Create or verify `frontend/.env`:
+```env
+VITE_API_URL=http://localhost:8000/api
+```
+
+Start the Vite development server:
+```bash
 npm run dev
 ```
-Open [http://localhost:5173](http://localhost:5173) in your browser to start debugging and optimizing your solutions!
+
+Open your browser at: **`http://localhost:5173`**
+
+---

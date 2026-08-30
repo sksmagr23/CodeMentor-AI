@@ -1,85 +1,91 @@
-import React from "react";
-import { FileText, Tag, CheckCircle2, Maximize2 } from "lucide-react";
+import React from 'react';
+import type { ProblemSummaryData } from '../../types/dsa';
+import { BookOpen, Target, AlertCircle, Layers } from 'lucide-react';
+import { renderSafeText } from '../../utils/safeText';
 
-interface ProblemSummaryCardProps {
-  title?: string;
-  difficulty?: "Easy" | "Medium" | "Hard";
-  statement?: string;
-  constraints?: string[];
-  inputBounds?: string;
-  onViewFull?: () => void;
-}
-
-export const ProblemSummaryCard: React.FC<ProblemSummaryCardProps> = ({
-  title = "",
-  difficulty = "Medium",
-  statement = "",
-  constraints = [],
-  inputBounds,
-  onViewFull
+export const ProblemSummaryCard: React.FC<ProblemSummaryData> = ({
+  title,
+  statement,
+  objective,
+  inputs,
+  outputs,
+  constraints,
+  edge_cases,
+  pattern,
+  expected_complexity,
 }) => {
-  const difficultyColors = {
-    Easy: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    Medium: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-    Hard: "bg-rose-500/10 text-rose-400 border-rose-500/20"
-  };
-
   return (
-    <div className="bg-[#18181b] border border-[#27272a] rounded-none overflow-hidden flex flex-col mb-4">
-      <div className="h-9 bg-[#131316] border-b border-[#27272a] flex items-center justify-between px-3">
-        <div className="flex items-center space-x-2">
-          <FileText className="w-4 h-4 text-emerald-400" />
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-300">
-            Problem Summary & Constraints
-          </span>
+    <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-5 shadow-lg my-3 text-slate-200">
+      <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <BookOpen className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="font-['Space_Grotesk'] text-base font-semibold text-slate-100">{renderSafeText(title)}</h3>
+            <span className="text-xs font-['JetBrains_Mono'] text-cyan-400">{renderSafeText(pattern)}</span>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 border ${difficultyColors[difficulty]}`}>
-            {difficulty}
+        {expected_complexity && (
+          <span className="px-2.5 py-1 text-xs font-['JetBrains_Mono'] rounded-full bg-slate-800 text-emerald-400 border border-emerald-500/30">
+            {renderSafeText(expected_complexity)}
           </span>
-          {onViewFull && (
-            <button
-              onClick={onViewFull}
-              className="flex items-center space-x-1 text-[11px] font-mono px-2 py-0.5 bg-[#27272a] hover:bg-[#3f3f46] text-emerald-300 border border-[#3f3f46] transition cursor-pointer"
-            >
-              <Maximize2 className="w-3 h-3" />
-              <span>View Full</span>
-            </button>
+        )}
+      </div>
+
+      <p className="text-sm text-slate-300 mb-4 leading-relaxed">{renderSafeText(statement)}</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs mb-4">
+        <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800">
+          <div className="flex items-center gap-1.5 font-medium text-slate-400 mb-1">
+            <Target className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Objective</span>
+          </div>
+          <p className="text-slate-200">{renderSafeText(objective)}</p>
+          {inputs && inputs.length > 0 && (
+            <div className="mt-2 text-[11px] text-slate-400 font-['JetBrains_Mono']">
+              Inputs: {inputs.map(renderSafeText).join(', ')}
+            </div>
           )}
         </div>
-      </div>
 
-      <div className="p-4 space-y-3">
-        <div>
-          <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-            <span>{title}</span>
-          </h3>
-          <p className="text-xs text-gray-300 mt-1 leading-relaxed">
-            {statement}
-          </p>
-        </div>
-
-        {inputBounds && (
-          <div className="text-xs font-mono bg-[#121214] p-2 border border-[#27272a] text-gray-300">
-            <span className="text-gray-500 uppercase text-[10px] block font-bold mb-1">Target Constraints</span>
-            {inputBounds}
+        <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800">
+          <div className="flex items-center gap-1.5 font-medium text-slate-400 mb-1">
+            <Layers className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Expected Output</span>
           </div>
-        )}
-
-        <div>
-          <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1.5 flex items-center">
-            <Tag className="w-3 h-3 mr-1 text-emerald-400" /> Key Constraints
-          </span>
-          <ul className="space-y-1">
-            {constraints.map((c, i) => (
-              <li key={i} className="text-xs font-mono text-gray-400 flex items-center space-x-2">
-                <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                <span className="bg-[#121214] px-1.5 py-0.5 border border-[#27272a]">{c}</span>
-              </li>
-            ))}
-          </ul>
+          <p className="text-slate-200 font-['JetBrains_Mono']">{renderSafeText(outputs)}</p>
         </div>
       </div>
+
+      {constraints && constraints.length > 0 && (
+        <div className="mb-3">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Constraints</h4>
+          <div className="flex flex-wrap gap-1.5">
+            {constraints.map((c, i) => (
+              <span key={i} className="px-2 py-0.5 text-xs font-['JetBrains_Mono'] rounded bg-slate-800/80 text-slate-300 border border-slate-700">
+                {renderSafeText(c)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {edge_cases && edge_cases.length > 0 && (
+        <div>
+          <div className="flex items-center gap-1 text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>Critical Edge Cases</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {edge_cases.map((ec, i) => (
+              <span key={i} className="px-2 py-0.5 text-xs rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                {renderSafeText(ec)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
