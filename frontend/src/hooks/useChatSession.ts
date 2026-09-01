@@ -110,11 +110,15 @@ export function useChatSession() {
       problem: string;
       solution: string;
       language: string;
-      active_input: string;
+      active_input?: string;
+      test_cases?: string[];
+      analyzeImmediately?: boolean;
     }) => {
       if (!sessionId) return;
       setIsLoading(true);
       setError(null);
+
+      const analyzeNow = data.analyzeImmediately !== false;
 
       try {
         const response = await updateSessionContext(
@@ -122,22 +126,24 @@ export function useChatSession() {
           data.problem,
           data.solution,
           data.language,
-          data.active_input,
-          true
+          data.active_input || (data.test_cases && data.test_cases[0]) || '',
+          data.test_cases || [],
+          analyzeNow
         );
 
-        const assistantMsg: ChatMessage = {
-          session_id: sessionId,
-          user_id: 'default_user',
-          role: 'assistant',
-          content: response.response,
-          intent: response.intent,
-          structured_data: response.structured_data,
-          next_actions: response.next_actions,
-          created_at: new Date().toISOString(),
-        };
-
-        setMessages((prev) => [...prev, assistantMsg]);
+        if (analyzeNow && response.response) {
+          const assistantMsg: ChatMessage = {
+            session_id: sessionId,
+            user_id: 'default_user',
+            role: 'assistant',
+            content: response.response,
+            intent: response.intent,
+            structured_data: response.structured_data,
+            next_actions: response.next_actions,
+            created_at: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, assistantMsg]);
+        }
 
         if (response.dsa_context) {
           setSessionContext(response.dsa_context as DSASessionContext);

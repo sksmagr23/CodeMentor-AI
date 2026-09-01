@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import type { ProblemSetupData } from '../../types/dsa';
-import { Code2, Play, AlertCircle, Sparkles } from 'lucide-react';
+import { Code2, Play, AlertCircle, Plus, Trash2 } from 'lucide-react';
 
 interface ProblemSetupFormProps extends ProblemSetupData {
   onSubmit?: (data: {
     problem: string;
     solution: string;
     language: string;
-    active_input: string;
+    active_input?: string;
+    test_cases?: string[];
   }) => Promise<void>;
   isLoading?: boolean;
 }
@@ -17,57 +18,56 @@ export const ProblemSetupForm: React.FC<ProblemSetupFormProps> = ({
   solution: initialSolution = '',
   language: initialLanguage = 'cpp',
   active_input: initialInput = '',
+  test_cases: initialTestCases = [],
   onSubmit,
   isLoading = false,
 }) => {
   const [problem, setProblem] = useState(initialProblem);
   const [solution, setSolution] = useState(initialSolution);
   const [language, setLanguage] = useState(initialLanguage || 'cpp');
-  const [activeInput, setActiveInput] = useState(initialInput);
+  const [testCases, setTestCases] = useState<string[]>(() => {
+    if (initialTestCases && initialTestCases.length > 0) return initialTestCases;
+    if (initialInput) return [initialInput];
+    return [''];
+  });
   const [error, setError] = useState<string | null>(null);
+
+  const handleAddTestCase = () => {
+    setTestCases((prev) => [...prev, '']);
+  };
+
+  const handleUpdateTestCase = (idx: number, val: string) => {
+    setTestCases((prev) => {
+      const next = [...prev];
+      next[idx] = val;
+      return next;
+    });
+  };
+
+  const handleRemoveTestCase = (idx: number) => {
+    setTestCases((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      return next.length === 0 ? [''] : next;
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!problem.trim()) {
-      setError('Problem statement is required for DSA solution analysis.');
-      return;
-    }
-    if (!solution.trim()) {
-      setError('Solution code is required for analysis.');
+    if (!problem.trim() && !solution.trim()) {
+      setError('Please provide either a problem statement or solution code to proceed.');
       return;
     }
     setError(null);
     if (onSubmit) {
+      const cleanCases = testCases.map((tc) => tc.trim()).filter(Boolean);
       await onSubmit({
         problem: problem.trim(),
         solution: solution.trim(),
         language,
-        active_input: activeInput.trim(),
+        active_input: cleanCases.length > 0 ? cleanCases[0] : '',
+        test_cases: cleanCases,
       });
     }
-  };
-
-  const loadExampleTwoSum = () => {
-    setProblem(
-      'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.'
-    );
-    setLanguage('cpp');
-    setSolution(`class Solution {
-public:
-    vector<int> twoSum(vector<int>& nums, int target) {
-        unordered_map<int, int> seen;
-        for (int i = 0; i < nums.size(); i++) {
-            int complement = target - nums[i];
-            if (seen.find(complement) != seen.end()) {
-                return {seen[complement], i};
-            }
-            seen[nums[i]] = i;
-        }
-        return {};
-    }
-};`);
-    setActiveInput('nums = [2, 7, 11, 15], target = 9');
-    setError(null);
   };
 
   return (
@@ -82,19 +82,10 @@ public:
               Problem & Solution Setup
             </h3>
             <span className="text-xs text-slate-400">
-              Submit your DSA problem and solution code for conceptual analysis
+              Provide problem statement, solution code, or both for analysis
             </span>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={loadExampleTwoSum}
-          className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition-colors"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Load Example (Two Sum)</span>
-        </button>
       </div>
 
       {error && (
@@ -105,9 +96,10 @@ public:
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Problem Statement */}
         <div>
           <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-            Problem Statement <span className="text-red-400">*</span>
+            Problem Statement <span className="text-slate-500 font-normal lowercase">(optional if code provided)</span>
           </label>
           <textarea
             rows={3}
@@ -130,36 +122,63 @@ public:
               className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3.5 py-2 text-xs text-slate-200 focus:border-cyan-500 focus:outline-none"
               disabled={isLoading}
             >
-              <option value="cpp">C++ (std::vector, LeetCode style)</option>
-              <option value="python">Python 3</option>
+              <option value="cpp">C++</option>
+              <option value="python">Python</option>
               <option value="java">Java</option>
-              <option value="javascript">JavaScript / TypeScript</option>
+              <option value="javascript">JavaScript</option>
               <option value="go">Go</option>
               <option value="rust">Rust</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Optional Sample Input
-            </label>
-            <input
-              type="text"
-              value={activeInput}
-              onChange={(e) => setActiveInput(e.target.value)}
-              placeholder="e.g. nums = [2,7,11,15], target = 9"
-              className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3.5 py-2 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
-              disabled={isLoading}
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                Sample Test Cases (Optional)
+              </label>
+              <button
+                type="button"
+                onClick={handleAddTestCase}
+                className="flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300 font-medium"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Add Test Case</span>
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              {testCases.map((tc, idx) => (
+                <div key={idx} className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={tc}
+                    onChange={(e) => handleUpdateTestCase(idx, e.target.value)}
+                    placeholder="e.g. nums = [2,7,11,15], target = 9"
+                    className="flex-1 rounded-lg bg-slate-950 border border-slate-800 px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:outline-none font-['JetBrains_Mono']"
+                    disabled={isLoading}
+                  />
+                  {testCases.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTestCase(idx)}
+                      className="p-1.5 rounded hover:bg-red-950/40 text-slate-500 hover:text-red-400 transition-colors"
+                      title="Remove test case"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-            Solution Code <span className="text-red-400">*</span>
+            Solution Code <span className="text-slate-500 font-normal lowercase">(optional if problem provided)</span>
           </label>
           <textarea
-            rows={8}
+            rows={7}
             value={solution}
             onChange={(e) => setSolution(e.target.value)}
             placeholder={`// Enter your solution function or class snippet\n// No main() or compiler scaffolding required`}

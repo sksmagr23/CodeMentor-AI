@@ -37,6 +37,7 @@ class DSASessionService:
             "solution": initial_context.solution if initial_context else None,
             "language": initial_context.language if initial_context else "cpp",
             "active_input": initial_context.active_input if initial_context else None,
+            "test_cases": initial_context.test_cases if initial_context else [],
             "problem_understanding": None,
             "user_approach": None,
             "current_analysis": None,
@@ -76,13 +77,18 @@ class DSASessionService:
         context: ContextUpdateRequest,
         user_id: str = "default_user"
     ) -> DSASessionContext:
-        """Update problem, solution, language, and active input in session."""
+        """Update problem, solution, language, active input, and test cases in session."""
         now = datetime.now(timezone.utc)
+        active_in = context.active_input
+        if not active_in and context.test_cases:
+            active_in = context.test_cases[0]
+
         update_fields = {
             "problem": context.problem,
             "solution": context.solution,
             "language": context.language,
-            "active_input": context.active_input,
+            "active_input": active_in,
+            "test_cases": context.test_cases or [],
             "updated_at": now,
         }
 

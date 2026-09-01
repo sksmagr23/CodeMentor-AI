@@ -48,6 +48,7 @@ export async function updateSessionContext(
   solution: string,
   language: string = 'cpp',
   activeInput: string = '',
+  testCases: string[] = [],
   analyzeImmediately: boolean = true
 ): Promise<AgentResponse> {
   const res = await fetch(`${API_BASE_URL}/sessions/${sessionId}/context`, {
@@ -58,6 +59,7 @@ export async function updateSessionContext(
       solution,
       language,
       active_input: activeInput,
+      test_cases: testCases,
       analyze_immediately: analyzeImmediately,
     }),
   });

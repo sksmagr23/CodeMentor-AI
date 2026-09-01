@@ -21,10 +21,6 @@ const App: React.FC = () => {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const handleOpenSetupForm = () => {
-    sendMessage("Please open the problem setup form to submit my problem and code");
-  };
-
   return (
     <div className="flex flex-col h-screen w-screen bg-[#0B0F17] text-slate-100 font-sans overflow-hidden antialiased select-none">
       <Header
@@ -35,11 +31,6 @@ const App: React.FC = () => {
       />
 
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-        <WorkspacePanel
-          sessionContext={sessionContext}
-          onOpenSetupForm={handleOpenSetupForm}
-        />
-
         <main className="flex flex-col flex-1 bg-slate-950/40 relative overflow-hidden">
           {error && (
             <div className="bg-red-950/80 border-b border-red-500/30 px-4 py-2 text-xs text-red-300 flex items-center justify-between">
@@ -60,6 +51,12 @@ const App: React.FC = () => {
             hasProblemContext={Boolean(sessionContext?.problem)}
           />
         </main>
+
+        <WorkspacePanel
+          sessionContext={sessionContext}
+          onSaveContext={saveProblemContext}
+          isLoading={isLoading}
+        />
       </div>
 
       <SessionSidebar

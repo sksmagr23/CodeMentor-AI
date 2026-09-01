@@ -11,7 +11,8 @@ interface ChatContainerProps {
     problem: string;
     solution: string;
     language: string;
-    active_input: string;
+    active_input?: string;
+    test_cases?: string[];
   }) => Promise<void>;
 }
 

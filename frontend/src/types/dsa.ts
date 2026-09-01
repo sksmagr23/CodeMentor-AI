@@ -36,6 +36,7 @@ export interface ProblemSetupData {
   solution?: string;
   language?: string;
   active_input?: string;
+  test_cases?: string[];
 }
 
 export interface ProblemSummaryData {
@@ -162,6 +163,7 @@ export interface AgentResponse {
   structured_data?: StructuredData | null;
   next_actions: NextAction[];
   dsa_context?: DSASessionContext | null;
+  new_session?: boolean;
 }
 
 export interface DSASessionContext {
@@ -171,6 +173,7 @@ export interface DSASessionContext {
   solution?: string | null;
   language: string;
   active_input?: string | null;
+  test_cases?: string[];
   problem_understanding?: any;
   user_approach?: any;
   current_analysis?: any;

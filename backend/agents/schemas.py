@@ -124,6 +124,7 @@ class DSASessionContext(BaseModel):
     solution: Optional[str] = None
     language: str = "cpp"
     active_input: Optional[str] = None
+    test_cases: List[str] = []
     problem_understanding: Optional[Dict[str, Any]] = None
     user_approach: Optional[Dict[str, Any]] = None
     current_analysis: Optional[Dict[str, Any]] = None
@@ -138,6 +139,7 @@ class ContextUpdateRequest(BaseModel):
     solution: str
     language: str = "cpp"
     active_input: Optional[str] = None
+    test_cases: List[str] = []
     analyze_immediately: bool = True
 
 
@@ -150,6 +152,7 @@ class AgentResponse(BaseModel):
     structured_data: Optional[Dict[str, Any]] = None
     next_actions: List[NextAction] = []
     dsa_context: Optional[Dict[str, Any]] = None
+    new_session: bool = False
 
 
 class QueryRequest(BaseModel):

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ChatMessage as ChatMessageType } from '../../types/dsa';
 import { renderStructuredData } from '../../registry/componentRegistry';
+import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import { ActionChips } from './ActionChips';
 import { Bot, User } from 'lucide-react';
 
@@ -12,7 +13,8 @@ interface ChatMessageProps {
     problem: string;
     solution: string;
     language: string;
-    active_input: string;
+    active_input?: string;
+    test_cases?: string[];
   }) => Promise<void>;
   isLoading?: boolean;
 }
@@ -41,7 +43,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               : 'bg-slate-900/90 text-slate-200 border border-slate-800/90 rounded-tl-sm shadow-md'
           }`}
         >
-          <div className="whitespace-pre-wrap font-sans">{message.content}</div>
+          {isUser ? (
+            <div className="whitespace-pre-wrap font-sans">{message.content}</div>
+          ) : (
+            <MarkdownRenderer content={message.content} />
+          )}
         </div>
 
         {!isUser && message.structured_data && (

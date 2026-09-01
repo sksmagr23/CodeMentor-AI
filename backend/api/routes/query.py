@@ -21,6 +21,7 @@ async def process_query(request: QueryRequest):
     session_service = get_session_service()
     conversation_service = get_conversation_service()
     planner = get_planner()
+    is_new_session = not bool(request.session_id)
 
     session = session_service.get_or_create_session(
         session_id=request.session_id,
@@ -41,6 +42,7 @@ async def process_query(request: QueryRequest):
             session_id=session_id,
             user_id=user_id,
             query=request.query,
+            is_new_session=is_new_session,
         )
     except Exception as e:
         logger.error(f"[QueryRouter] Planner execution failed: {e}", exc_info=True)
@@ -56,4 +58,5 @@ async def process_query(request: QueryRequest):
         next_actions=[a.model_dump() for a in agent_response.next_actions],
     )
 
+    agent_response.new_session = is_new_session
     return agent_response
