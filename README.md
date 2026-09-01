@@ -1,102 +1,83 @@
-# CodeMentor AI⚡
+# CodeMentor AI
 
-> **An interactive, conversational Data Structures & Algorithms (DSA) mentor with dynamic Generative UI, visual dry-run illustrations, and persistent session memory.**
+> **An interactive, conversational Data Structures & Algorithms (DSA) mentor with dynamic Generative UI, visual dry-run illustrations, Monaco code editor, and persistent session memory.**
 
-**CodeMentor AI** acts like an experienced tech lead or algorithms coach pair-programming right beside you:
-- **Conversational & Non-Intrusive**: You chat naturally in real time. The chat interface is persistent and never disappears.
-- **Generative Visual UI**: Instead of raw text or messy JSON, CodeMentor dynamically plans and renders rich visual cards directly in the chat stream: interactive bug breakdowns, side-by-side complexity matrices, failing counterexamples, and illustrated dry-run diagrams.
-- **Conceptual & Language-Agnostic**: It does not rely on rigid compilers. It analyzes the pure algorithmic logic of your code in C++, Python, Java, JavaScript, Go, or Rust.
-- **Persistent Context**: You submit your problem and draft code once; CodeMentor remembers your workspace throughout the session so you can ask follow-ups like *"Why does it fail on duplicates?"* or *"Show me the optimal solution"* without re-pasting anything.
+- **Conversational & Non-Intrusive**: Chat naturally in real time. The chat workspace is persistent, responsive, and renders rich GitHub-flavored markdown, HTML formatting, and syntax-highlighted code blocks.
+- **Dual-Pane Interactive Workspace**: 
+  - **Left Pane**: Main conversational chat stream with interactive Generative UI cards, dynamic next action chips, and rich markdown.
+  - **Right Pane**: Active DSA Context Preview Panel featuring an in-place Monaco editor, live language switcher, and multiple test cases manager.
+- **Generative Visual UI**: Instead of raw text or messy JSON dumps, CodeMentor dynamically plans and renders rich visual cards directly in the chat stream: interactive bug breakdowns, side-by-side complexity matrices, failing counterexamples, and illustrated dry-run diagrams.
+- **Monaco Code Editor Integration**: Full-featured Monaco code editor for viewing snippets, debugging fixes, optimal implementations, and editing solution code directly in-place.
+- **Conceptual & Language-Agnostic**: Does not rely on rigid compilers. It evaluates the pure algorithmic logic of your code across C++, Python, Java, JavaScript/TypeScript, Go, or Rust.
+- **Multi-Problem Support in One Session**: Discuss multiple problems back-to-back in the same conversation thread without losing history.
 
 ---
 
 ## Key Features
 
-### 1. Comprehensive Solution Analysis
-Submit your problem and draft code in any major programming language. CodeMentor AI evaluates:
-- **Algorithm & Pattern Classification**: Recognizes two-pointer, sliding window, dynamic programming, backtracking, monotonic stack, etc.
-- **Correctness Classification**: Evaluates whether your solution is:
-  - `Correct & Optimal`
-  - `Correct but Suboptimal`
-  - `Right Idea, Buggy Implementation`
-  - `Incorrect Approach`
-- **Strengths & Limitations**: Identifies what works well and points out hidden traps or memory inefficiencies.
+### 1. Immediate Solution Generation
+- Give any problem statement or ask *"How to solve 3Sum"* without being forced to provide code first.
+- CodeMentor AI immediately generates:
+  - The **optimal algorithmic pattern** (e.g. Two Pointers, Monotonic Stack, Dynamic Programming).
+  - The **optimal implementation** in your chosen programming language with clean, production-grade code.
+  - Asymptotic time and auxiliary space complexity derivations.
 
-### 2. Pinpoint Bug Diagnosis & Failing Counterexamples
-When code fails:
-- **Root Cause Explanation**: Explains exactly *why* the code fails conceptually (e.g., integer overflow, off-by-one pointer error, missing edge case for negative numbers).
-- **Failing Counterexample**: Provides a minimal failing test case and contrasts **Your Code's Output** vs. **Expected Output**.
-- **Targeted Fix**: Explains how to correct the logic without rewriting everything from scratch.
+### 2. Comprehensive Solution Analysis & Logic Breakdown
+- Submit your code in C++, Python, Java, JS/TS, Go, or Rust:
+  - **Pattern Classification**: Identifies underlying algorithms and data structures.
+  - **Correctness Classification**: Evaluates if the solution is `Correct & Optimal`, `Correct but Suboptimal`, `Right Idea, Buggy Implementation`, or `Incorrect Approach`.
+  - **Strengths & Weaknesses**: Highlights clean logic and uncovers hidden pitfalls or memory inefficiencies.
 
-### 3. On-Demand Visual Dry Runs (AI Illustrated)
-Instead of manually tracing loops on pencil and paper:
-- Request a dry run anytime.
-- CodeMentor AI generates an educational diagram using **Gemini Multimodal Image Generation** paired with an SVG vector fallback.
-- Visualizes array indices, pointer movements, recursion stacks, and hash map states.
-- Includes a full-screen **Lightbox Modal** with download capabilities for offline revision.
+### 3. Pinpoint Bug Diagnosis & Failing Counterexamples
+- **Root Cause Explanation**: Pinpoints exactly *why* your solution fails (e.g., boundary condition, off-by-one pointer error, integer overflow).
+- **Failing Counterexample**: Generates a concrete failing test case contrasting **Your Code's Output** vs. **Expected Output**.
+- **Corrected Code Viewer**: Displays the cleanly corrected code in a Monaco editor with minimal comments and clear guidance.
 
-### 4. Guided Optimizations & Side-by-Side Comparisons
-- **Optimal Transition**: Learn how to optimize a brute-force $O(N^2)$ solution into an optimal $O(N)$ or $O(N \log N)$ approach.
-- **Comparison Matrix**: View a side-by-side comparison of **Your Approach** vs. **Optimal Approach** detailing time complexity, auxiliary memory, and algorithmic trade-offs.
+### 4. On-Demand Visual Dry Runs (AI-Illustrated Traces)
+- Request a dry run anytime (`"Show dry run"`, `"Trace execution"`).
+- CodeMentor AI generates an educational diagram using **Gemini Multimodal Image Generation** paired with an SVG vector fallback engine.
+- Step-by-step trace showing array indices, pointer updates, hash map states, and recursion tree progress.
+- Includes a full-screen **Lightbox Modal** with download capabilities for offline study.
 
-### 5. In-Depth Complexity Derivation
-- Asymptotic time and space complexity with step-by-step mathematical reasoning.
-- Bottleneck identification (e.g., nested loop overhead or auxiliary hash table memory).
-- Best-case, average-case, and worst-case bounds.
+### 5. Monaco Code Editor Integration
+- Embedded **Monaco Code Editor** with dark mode theme (`vs-dark`):
+  - Syntax highlighting for C++, Python, Java, JavaScript, TypeScript, Go, and Rust.
+  - Dual modes: read-only formatted viewing with line numbers + interactive in-place editing.
+  - One-click **Copy Code** button.
 
-### 6. Click Contextual Action Chips
-- After every response, CodeMentor presents 1–3 smart next-action chips (e.g., `Run Dry Run`, `Debug Edge Cases`, `Show Optimal`, `Compare Approaches`).
-- Clicking any action executes the query in the **same active session** without repetitive typing.
+### 6. In-Place Context Editor & Multiple Test Cases
+- Click **"Edit"** in the right preview panel to edit problem statements, solution code, or test cases **directly inside the panel without sending chat messages**.
+- Add, update, and manage multiple test cases per problem (`+ Add Test Case`, delete, copy).
+- Flexible input rules: provide only a problem statement, only code, or both.
 
-### 7. Multi-Session History Management
-- All sessions are automatically saved to MongoDB.
-- Open the **Session History Drawer** to switch between different problems you've worked on, inspect message history, or clean up past sessions.
-- Browser `localStorage` recovery ensures that refreshing the page never loses your active workspace.
+### 7. Multi-Problem Discussion in One Session
+- Discuss multiple problems back-to-back in the same conversation thread.
+- When you introduce a new problem (e.g. *"Now let's solve Longest Substring Without Repeating Characters"*), CodeMentor automatically detects the new problem, updates the MongoDB context in-place, and refreshes the preview panel seamlessly.
+
+### 9. 🗄️ Multi-Session History Management
+- All sessions are automatically persisted in MongoDB (`dsa_sessions` and `conversation_history`).
+- Open the **Session History Drawer** to switch between past problems, review prior chats, or delete older sessions.
+- Browser `localStorage` recovery ensures active session persistence on page refreshes.
 
 ---
 
-## Core Architecture & Design Philosophy
+### BenchMarks
 
-```mermaid
-graph TD
-    A[React Client / Vite] -->|POST /api/query| B[FastAPI Gateway]
-    A -->|POST /api/sessions/context| B
-    B --> C[DSAPlanner Orchestrator]
-    
-    C -->|Fetch Active Context| D[(MongoDB: dsa_sessions)]
-    C -->|Check Missing Context| E{Context Present?}
-    
-    E -->|No| F[Return ProblemSetupForm intent]
-    E -->|Yes| G[Execute Targeted DSA Tool]
-    
-    G --> H[Google ADK / Gemini 2.5 Flash]
-    G -->|On-demand Dry Run| I[Gemini 2.5 Flash Image / SVG Engine]
-    
-    G --> J[Format Intent + Structured Data + Next Actions]
-    J -->|Persist Turn| K[(MongoDB: conversation_history)]
-    J -->|JSON Response| A
-    
-    A --> L[Centralized Component Registry]
-    L --> M[Render Verified Dynamic Cards in Chat]
-```
-
-### Architectural Principles
-
-1. **Non-Compiler Conceptual Approach**:
-   No heavy execution sandboxes (g++, python sub-processes, or Docker containers). The assistant evaluates conceptual algorithm semantics, which avoids environmental discrepancies and enables instant response across any programming language.
+1. **Non-Compiler Conceptual Evaluation**:
+   No heavy compiler sandboxes or execution containers. CodeMentor evaluates conceptual algorithm semantics, avoiding platform discrepancies and supporting instant reasoning across any language.
 
 2. **Controlled Generative UI**:
-   The LLM **never** emits raw HTML or executable JSX. Instead, the backend enforces a controlled structured responses, while frontend safely maps each type to a registered React component:
-   - `problem_setup_form` $\rightarrow$ Interactive setup form
-   - `problem_summary` $\rightarrow$ Problem statement, pattern, constraints card
+   The LLM never emits raw executable JSX. Instead, the backend enforces validated Pydantic schemas, and the frontend safely maps each structured payload to a registered React component:
+   - `problem_setup_form` $\rightarrow$ Interactive setup form (optional fields & multi-test cases)
+   - `problem_summary` $\rightarrow$ Problem statement, pattern, constraints breakdown
    - `approach_card` $\rightarrow$ Algorithmic logic, data structures, complexity badges
-   - `bug_analysis_card` $\rightarrow$ Failure cause, failing condition, fix snippet
-   - `counterexample_card` $\rightarrow$ Input, actual vs. expected output
-   - `dry_run_image` $\rightarrow$ Step trace + visual diagram with lightbox
-   - `optimization_card` $\rightarrow$ Improved algorithmic approach & code
+   - `bug_analysis_card` $\rightarrow$ Failure cause, failing condition, Monaco fix snippet
+   - `counterexample_card` $\rightarrow$ Failing input, actual vs. expected output
+   - `dry_run_image` $\rightarrow$ Step trace + visual diagram with lightbox modal
+   - `optimization_card` $\rightarrow$ Optimal approach & Monaco code viewer
    - `solution_comparison_card` $\rightarrow$ Side-by-side trade-off matrix
-   - `code_viewer` $\rightarrow$ Formatted snippet with syntax highlight & code copy
-   - `complexity_card` $\rightarrow$ Code complexity & bottleneck analysis
+   - `code_viewer` $\rightarrow$ Formatted snippet with Monaco editor & copy
+   - `complexity_card` $\rightarrow$ Code complexity derivation & bottleneck breakdown
 
 ---
 
