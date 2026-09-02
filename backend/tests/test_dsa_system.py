@@ -54,14 +54,14 @@ async def test_session_creation_and_persistence():
 
 @pytest.mark.asyncio
 async def test_missing_context_handling():
-    """Test 5: Missing context triggers problem setup form."""
+    """Test 5: Missing context returns clear conversational guidance directing user to side panel."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         res = await ac.post("/api/query", json={"query": "Why is my solution wrong?"})
         assert res.status_code == 200
         data = res.json()
-        assert data["intent"] == DSAIntent.SETUP_PROBLEM.value
-        assert data["structured_data"]["type"] == StructuredDataType.PROBLEM_SETUP_FORM.value
+        assert data["intent"] == DSAIntent.GENERAL_CHAT.value
+        assert "Active Context" in data["response"] or "solution code" in data["response"]
         assert len(data["next_actions"]) > 0
 
 

@@ -10,7 +10,6 @@ from datetime import datetime
 
 class DSAIntent(str, Enum):
     GENERAL_CHAT = "general_chat"
-    SETUP_PROBLEM = "setup_problem"
     EXPLAIN_PROBLEM = "explain_problem"
     EXPLAIN_APPROACH = "explain_approach"
     ANALYZE_SOLUTION = "analyze_solution"
@@ -25,7 +24,6 @@ class DSAIntent(str, Enum):
 
 
 class StructuredDataType(str, Enum):
-    PROBLEM_SETUP_FORM = "problem_setup_form"
     PROBLEM_SUMMARY = "problem_summary"
     APPROACH_CARD = "approach_card"
     BUG_ANALYSIS_CARD = "bug_analysis_card"

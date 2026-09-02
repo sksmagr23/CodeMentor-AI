@@ -9,20 +9,12 @@ interface ChatMessageProps {
   message: ChatMessageType;
   isLatest: boolean;
   onActionClick: (actionPrompt: string) => void;
-  onSetupSubmit?: (data: {
-    problem: string;
-    solution: string;
-    language: string;
-    active_input?: string;
-    test_cases?: string[];
-  }) => Promise<void>;
   isLoading?: boolean;
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({
   message,
   onActionClick,
-  onSetupSubmit,
   isLoading,
 }) => {
   const isUser = message.role === 'user';
@@ -53,7 +45,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         {!isUser && message.structured_data && (
           <div className="w-full">
             {renderStructuredData(message.structured_data, {
-              onSetupSubmit,
               isLoading,
             })}
           </div>

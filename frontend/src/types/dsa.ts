@@ -1,6 +1,5 @@
 export type DSAIntent =
   | 'general_chat'
-  | 'setup_problem'
   | 'explain_problem'
   | 'explain_approach'
   | 'analyze_solution'
@@ -14,7 +13,6 @@ export type DSAIntent =
   | 'explain_complexity';
 
 export type StructuredDataType =
-  | 'problem_setup_form'
   | 'problem_summary'
   | 'approach_card'
   | 'bug_analysis_card'
@@ -28,15 +26,6 @@ export type StructuredDataType =
 export interface NextAction {
   label: string;
   action_prompt: string;
-}
-
-export interface ProblemSetupData {
-  type: 'problem_setup_form';
-  problem?: string;
-  solution?: string;
-  language?: string;
-  active_input?: string;
-  test_cases?: string[];
 }
 
 export interface ProblemSummaryData {
@@ -144,7 +133,6 @@ export interface DryRunImageData {
 }
 
 export type StructuredData =
-  | ProblemSetupData
   | ProblemSummaryData
   | ApproachCardData
   | BugAnalysisData

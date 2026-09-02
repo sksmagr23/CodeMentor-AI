@@ -35,11 +35,6 @@ def build_default_next_actions(intent: str, context: Optional[Dict[str, Any]] = 
                 NextAction(label="Optimal Solution", action_prompt="Show the optimal approach for this problem"),
             ]
 
-    if intent == DSAIntent.SETUP_PROBLEM:
-        return [
-            NextAction(label="Analyze My Solution", action_prompt="Please open the problem setup form to submit my code"),
-        ]
-
     if intent == DSAIntent.ANALYZE_SOLUTION or intent == DSAIntent.EXPLAIN_APPROACH:
         classification = ctx.get("classification", "")
         actions = []

@@ -24,7 +24,6 @@ from .schemas import (
 from .prompts import CODEMENTOR_SYSTEM_INSTRUCTIONS
 from .intents import build_default_next_actions
 from .tools import (
-    open_problem_setup_form,
     explain_problem_tool,
     analyze_solution_tool,
     debug_solution_tool,
@@ -209,37 +208,19 @@ Return JSON with:
         has_solution = bool(session.solution and session.solution.strip())
 
         # -------------------------------------------------------------
-        # 1. EXPLICIT FORM OPEN REQUEST
-        # -------------------------------------------------------------
-        if "setup" in q_lower or "problem setup form" in q_lower or "open form" in q_lower:
-            form_tool_res = open_problem_setup_form(
-                problem=session.problem or "",
-                solution=session.solution or "",
-                language=session.language or "cpp",
-                active_input=session.active_input or "",
-            )
-            return AgentResponse(
-                session_id=session.session_id,
-                response=form_tool_res["response"],
-                intent=form_tool_res["intent"],
-                structured_data=form_tool_res["structured_data"],
-                next_actions=[NextAction(**a) for a in form_tool_res["next_actions"]],
-                dsa_context=session.model_dump(),
-                new_session=is_new_session,
-            )
-
-        # -------------------------------------------------------------
-        # 2. ON-DEMAND DRY RUN REQUEST
+        # 1. ON-DEMAND DRY RUN REQUEST
         # -------------------------------------------------------------
         if self._is_dry_run_requested(clean_query):
             if not has_problem and not has_solution:
-                form_tool_res = open_problem_setup_form()
                 return AgentResponse(
                     session_id=session.session_id,
-                    response="To visualize a dry run, please provide the problem statement and your solution code in the setup form below.",
-                    intent=form_tool_res["intent"],
-                    structured_data=form_tool_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in form_tool_res["next_actions"]],
+                    response="To visualize a dry run, please provide the problem statement and your solution code in the **Active Context** panel on the right (or paste them directly here in chat).",
+                    intent=DSAIntent.GENERAL_CHAT.value,
+                    structured_data=None,
+                    next_actions=[
+                        NextAction(label="Explain a DSA Concept", action_prompt="What is dynamic programming and when do we use it?"),
+                        NextAction(label="Common Patterns", action_prompt="What are the most common DSA patterns used in technical interviews?"),
+                    ],
                     dsa_context=session.model_dump(),
                     new_session=is_new_session,
                 )
@@ -262,7 +243,7 @@ Return JSON with:
             )
 
         # -------------------------------------------------------------
-        # 3. SOLVE / PROVIDE SOLUTION REQUEST (even if user gave NO code)
+        # 2. SOLVE / PROVIDE SOLUTION REQUEST (even if user gave NO code)
         # -------------------------------------------------------------
         if self._is_solution_requested(clean_query) or "optimal solution" in q_lower or "how to solve" in q_lower:
             if has_problem:
@@ -281,19 +262,21 @@ Return JSON with:
                     new_session=is_new_session,
                 )
             else:
-                form_tool_res = open_problem_setup_form()
                 return AgentResponse(
                     session_id=session.session_id,
-                    response="I'd be glad to provide the optimal solution and complete breakdown! Please provide the problem statement in the form below (or paste it directly in chat).",
-                    intent=form_tool_res["intent"],
-                    structured_data=form_tool_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in form_tool_res["next_actions"]],
+                    response="I'd be glad to provide the optimal solution and complete breakdown! Please provide the problem statement in the **Active Context** panel on the right (or paste it directly in chat).",
+                    intent=DSAIntent.GENERAL_CHAT.value,
+                    structured_data=None,
+                    next_actions=[
+                        NextAction(label="Common Patterns", action_prompt="What are the most common DSA patterns used in technical interviews?"),
+                        NextAction(label="Two Pointers vs Hash Map", action_prompt="When should I use Two Pointers vs Hash Map?"),
+                    ],
                     dsa_context=session.model_dump(),
                     new_session=is_new_session,
                 )
 
         # -------------------------------------------------------------
-        # 4. DEBUG / FIND BUG / WHY IS CODE WRONG
+        # 3. DEBUG / FIND BUG / WHY IS CODE WRONG
         # -------------------------------------------------------------
         if "why is" in q_lower or "bug" in q_lower or "wrong" in q_lower or "debug" in q_lower or "fails" in q_lower:
             if has_solution:
@@ -312,19 +295,20 @@ Return JSON with:
                     new_session=is_new_session,
                 )
             else:
-                form_tool_res = open_problem_setup_form(problem=session.problem or "")
                 return AgentResponse(
                     session_id=session.session_id,
-                    response="To debug your logic and identify edge-case failures, please enter your solution code in the setup form below.",
-                    intent=form_tool_res["intent"],
-                    structured_data=form_tool_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in form_tool_res["next_actions"]],
+                    response="To debug your logic and identify edge-case failures, please enter your solution code in the **Active Context** panel on the right (or paste it directly in chat).",
+                    intent=DSAIntent.GENERAL_CHAT.value,
+                    structured_data=None,
+                    next_actions=[
+                        NextAction(label="Analyze Approach", action_prompt="Can you explain how to debug edge cases in algorithms?"),
+                    ],
                     dsa_context=session.model_dump(),
                     new_session=is_new_session,
                 )
 
         # -------------------------------------------------------------
-        # 5. COUNTEREXAMPLE / FAILING TEST CASE
+        # 4. COUNTEREXAMPLE / FAILING TEST CASE
         # -------------------------------------------------------------
         if "counterexample" in q_lower or "failing test" in q_lower or "edge case" in q_lower:
             if has_solution:
@@ -354,19 +338,20 @@ Return JSON with:
                     new_session=is_new_session,
                 )
             else:
-                form_tool_res = open_problem_setup_form()
                 return AgentResponse(
                     session_id=session.session_id,
-                    response="To generate a failing counterexample, please provide your solution code and problem statement in the form below.",
-                    intent=form_tool_res["intent"],
-                    structured_data=form_tool_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in form_tool_res["next_actions"]],
+                    response="To generate a failing counterexample, please enter your solution code and problem statement in the **Active Context** panel on the right (or paste them directly in chat).",
+                    intent=DSAIntent.GENERAL_CHAT.value,
+                    structured_data=None,
+                    next_actions=[
+                        NextAction(label="Common Edge Cases", action_prompt="What are the most common edge cases to watch out for in arrays and strings?"),
+                    ],
                     dsa_context=session.model_dump(),
                     new_session=is_new_session,
                 )
 
         # -------------------------------------------------------------
-        # 6. UNDERSTAND APPROACH / ANALYZE SOLUTION
+        # 5. UNDERSTAND APPROACH / ANALYZE SOLUTION
         # -------------------------------------------------------------
         if "approach" in q_lower or "analyze" in q_lower or "review" in q_lower or "understand my" in q_lower or "explain my" in q_lower:
             if has_solution:
@@ -397,19 +382,21 @@ Return JSON with:
                     new_session=is_new_session,
                 )
             else:
-                form_tool_res = open_problem_setup_form()
                 return AgentResponse(
                     session_id=session.session_id,
-                    response="I'm ready to analyze your approach! Please enter your problem statement or solution code in the setup form below.",
-                    intent=form_tool_res["intent"],
-                    structured_data=form_tool_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in form_tool_res["next_actions"]],
+                    response="I'm ready to analyze your approach! Please enter your problem statement or solution code in the **Active Context** panel on the right (or paste them directly in chat).",
+                    intent=DSAIntent.GENERAL_CHAT.value,
+                    structured_data=None,
+                    next_actions=[
+                        NextAction(label="Explain a Concept", action_prompt="What is dynamic programming and when do we use it?"),
+                        NextAction(label="Common Patterns", action_prompt="What are the most common DSA patterns used in technical interviews?"),
+                    ],
                     dsa_context=session.model_dump(),
                     new_session=is_new_session,
                 )
 
         # -------------------------------------------------------------
-        # 7. COMPLEXITY ANALYSIS
+        # 6. COMPLEXITY ANALYSIS
         # -------------------------------------------------------------
         if "complexity" in q_lower or "big o" in q_lower or "time complexity" in q_lower or "space complexity" in q_lower:
             if has_solution:
@@ -440,7 +427,7 @@ Return JSON with:
                 )
 
         # -------------------------------------------------------------
-        # 8. COMPARE SOLUTIONS
+        # 7. COMPARE SOLUTIONS
         # -------------------------------------------------------------
         if "compare" in q_lower:
             if has_solution:
@@ -460,7 +447,7 @@ Return JSON with:
                 )
 
         # -------------------------------------------------------------
-        # 9. SHOW FIX / CORRECTED CODE
+        # 8. SHOW FIX / CORRECTED CODE
         # -------------------------------------------------------------
         if "fix" in q_lower or "corrected" in q_lower:
             if has_solution:
@@ -480,7 +467,7 @@ Return JSON with:
                 )
 
         # -------------------------------------------------------------
-        # 10. EXPLAIN PROBLEM STATEMENT
+        # 9. EXPLAIN PROBLEM STATEMENT
         # -------------------------------------------------------------
         if "explain problem" in q_lower or "understand problem" in q_lower or "problem breakdown" in q_lower:
             if has_problem:
@@ -495,19 +482,20 @@ Return JSON with:
                     new_session=is_new_session,
                 )
             else:
-                form_tool_res = open_problem_setup_form()
                 return AgentResponse(
                     session_id=session.session_id,
-                    response="Please provide the problem statement in the form below so I can break it down.",
-                    intent=form_tool_res["intent"],
-                    structured_data=form_tool_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in form_tool_res["next_actions"]],
+                    response="Please enter the problem statement in the **Active Context** panel on the right (or paste it directly in chat) so I can break it down for you.",
+                    intent=DSAIntent.GENERAL_CHAT.value,
+                    structured_data=None,
+                    next_actions=[
+                        NextAction(label="Common Patterns", action_prompt="What are the most common DSA patterns used in technical interviews?"),
+                    ],
                     dsa_context=session.model_dump(),
                     new_session=is_new_session,
                 )
 
         # -------------------------------------------------------------
-        # 11. GENERAL CHAT / THEORETICAL CONCEPTS
+        # 10. GENERAL CHAT / THEORETICAL CONCEPTS
         # -------------------------------------------------------------
         augmented_prompt = self._build_context_prompt(session, clean_query, recent_messages)
         sys_prompt = CODEMENTOR_SYSTEM_INSTRUCTIONS + """

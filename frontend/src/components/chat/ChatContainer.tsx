@@ -7,20 +7,12 @@ interface ChatContainerProps {
   messages: ChatMessageType[];
   isLoading: boolean;
   onActionClick: (actionPrompt: string) => void;
-  onSetupSubmit?: (data: {
-    problem: string;
-    solution: string;
-    language: string;
-    active_input?: string;
-    test_cases?: string[];
-  }) => Promise<void>;
 }
 
 export const ChatContainer: React.FC<ChatContainerProps> = ({
   messages,
   isLoading,
   onActionClick,
-  onSetupSubmit,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +69,6 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
               message={msg}
               isLatest={idx === messages.length - 1}
               onActionClick={onActionClick}
-              onSetupSubmit={onSetupSubmit}
               isLoading={isLoading}
             />
           ))}

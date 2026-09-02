@@ -74,43 +74,7 @@ def extract_dynamic_next_actions(
 
 
 # =========================================================================
-# 1. PROBLEM & SOLUTION SETUP FORM TOOL
-# =========================================================================
-
-@tool
-def open_problem_setup_form(
-    problem: str = "",
-    solution: str = "",
-    language: str = "cpp",
-    active_input: str = "",
-) -> Dict[str, Any]:
-    """
-    Opens the interactive Problem & Solution Setup Form in chat
-    when problem context or solution code is missing.
-    """
-    structured_data = {
-        "type": StructuredDataType.PROBLEM_SETUP_FORM.value,
-        "problem": problem,
-        "solution": solution,
-        "language": language,
-        "active_input": active_input,
-    }
-
-    next_actions = [
-        {"label": "Explain a Concept Instead", "action_prompt": "What is dynamic programming and when do we use it?"},
-        {"label": "Common Algorithmic Patterns", "action_prompt": "What are the most common DSA patterns used in technical interviews?"},
-    ]
-
-    return {
-        "intent": DSAIntent.SETUP_PROBLEM.value,
-        "response": "I've opened the Problem Setup form below. Please provide the problem statement and your solution code so we can analyze it conceptually.",
-        "structured_data": structured_data,
-        "next_actions": next_actions,
-    }
-
-
-# =========================================================================
-# 2. EXPLAIN PROBLEM TOOL
+# 1. EXPLAIN PROBLEM TOOL
 # =========================================================================
 
 @tool

@@ -1,6 +1,5 @@
 import React from 'react';
-import type { StructuredData, ProblemSetupData } from '../types/dsa';
-import { ProblemSetupForm } from '../components/forms/ProblemSetupForm';
+import type { StructuredData } from '../types/dsa';
 import { ProblemSummaryCard } from '../components/cards/ProblemSummaryCard';
 import { ApproachCard } from '../components/cards/ApproachCard';
 import { BugAnalysisCard } from '../components/cards/BugAnalysisCard';
@@ -14,13 +13,6 @@ import { AlertTriangle } from 'lucide-react';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 interface RegistryHandlers {
-  onSetupSubmit?: (data: {
-    problem: string;
-    solution: string;
-    language: string;
-    active_input?: string;
-    test_cases?: string[];
-  }) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -41,7 +33,6 @@ const UnsupportedCard: React.FC<{ type: string; data: any }> = ({ type, data }) 
  * Dispatches structured_data.type to corresponding verified React component.
  */
 export const componentRegistry: Record<string, React.ComponentType<any>> = {
-  problem_setup_form: ProblemSetupForm,
   problem_summary: ProblemSummaryCard,
   approach_card: ApproachCard,
   bug_analysis_card: BugAnalysisCard,
@@ -55,7 +46,7 @@ export const componentRegistry: Record<string, React.ComponentType<any>> = {
 
 export function renderStructuredData(
   structuredData: StructuredData | null | undefined,
-  handlers: RegistryHandlers = {}
+  _handlers: RegistryHandlers = {}
 ): React.ReactNode {
   if (!structuredData || !structuredData.type) {
     return null;
@@ -64,17 +55,6 @@ export function renderStructuredData(
   const Component = componentRegistry[structuredData.type];
   if (!Component) {
     return <UnsupportedCard type={structuredData.type} data={structuredData} />;
-  }
-
-  if (structuredData.type === 'problem_setup_form') {
-    const formData = structuredData as ProblemSetupData;
-    return (
-      <ProblemSetupForm
-        {...formData}
-        onSubmit={handlers.onSetupSubmit}
-        isLoading={handlers.isLoading}
-      />
-    );
   }
 
   return (
