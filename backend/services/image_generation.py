@@ -10,6 +10,7 @@ from typing import List, Dict, Any, Optional
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from backend.agents.prompts import build_dry_run_image_prompt
 
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
 logger = logging.getLogger(__name__)
@@ -100,21 +101,7 @@ async def generate_dry_run_image(
         logger.warning("[DryRunImage] No GEMINI_API_KEY set, using SVG fallback.")
         return generate_educational_svg_diagram(problem_title, algorithm, input_str, steps)
 
-    prompt = f"""
-Create a clear, high-resolution educational computer science diagram illustrating a dry run trace for:
-Problem: {problem_title}
-Algorithm: {algorithm}
-Input: {input_str}
-
-Key execution steps to visualize:
-{chr(10).join(f"- {s}" for s in steps[:5])}
-
-Design guidelines:
-- Dark developer aesthetic (dark blue/slate background, high contrast).
-- Show the data structure (array, hash table, pointers, or stack) clearly with indices and values.
-- Point arrows or callouts indicating pointer/variable movements or updates at each step.
-- Clean typography and crisp educational presentation.
-"""
+    prompt = build_dry_run_image_prompt(problem_title, algorithm, input_str, steps)
     try:
         client = genai.Client(api_key=GEMINI_API_KEY)
         response = client.models.generate_content(

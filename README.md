@@ -1,61 +1,85 @@
 # CodeMentor AI
 
-> **An interactive, conversational DSA mentor with dynamic Generative UI, visual dry-run illustrations, Monaco code editor, and persistent user session memory in MongoDB.**
+> **Your Intelligent DSA Pair Programmer & Algorithm Visualizer**
 
-- **Google Authentication**: Complete user authentication flow powered by FastAPI, MongoDB `users` collection, and signed JWT Bearer tokens with route protection.
-- **Dual-Pane Resizable Workspace**: 
-  - **Left Pane**: Main conversational chat stream with interactive Generative UI cards, dynamic next action chips, and rich markdown.
-  - **Right Pane**: Active DSA Context Preview Panel featuring an in-place Monaco editor, live language switcher, multiple test cases manager, and full-screen dark foreground popup modals.
-  - **Draggable Split Slider**: Adjust the pane ratio freely between 25% and 75% width.
-- **Generative Visual UI**: Instead of raw text or messy JSON dumps, CodeMentor dynamically plans and renders rich visual cards directly in the chat stream: interactive bug breakdowns, side-by-side complexity matrices, failing counterexamples, and illustrated dry-run diagrams.
-- **Monaco Code Editor Integration**: Full-featured Monaco code editor for viewing snippets, debugging fixes, optimal implementations, and editing solution code directly in-place.
-- **Conceptual & Language-Agnostic**: Does not rely on rigid compilers. It evaluates the pure algorithmic logic of your code across C++, Python, Java, JavaScript/TypeScript, Go, or Rust.
-- **Multi-Problem Support in One Session**: Discuss multiple problems back-to-back in the same conversation thread without losing history.
+CodeMentor AI is an interactive learning and debugging platform designed to help developers and students master Data Structures & Algorithms (DSA). Chat naturally, analyze your code conceptually, inspect failing counterexamples, and visualize step-by-step execution traces with AI-generated diagrams.
 
 ---
 
-## Key Features
+## What You Can Do with CodeMentor AI
 
-### 1. Immediate Solution Generation
-- Give any problem statement or ask *"How to solve 3Sum"* without being forced to provide code first.
-- CodeMentor AI immediately generates:
-  - The **optimal algorithmic pattern** (e.g. Two Pointers, Monotonic Stack, Dynamic Programming).
-  - The **optimal implementation** in your chosen programming language with clean, production-grade code.
-  - Asymptotic time and auxiliary space complexity derivations.
+### 1. Chat & Learn Naturally
+- **Easy Problem Setup**: Simply mention a problem by name (e.g., *"How do I solve 3Sum?"*, *"Explain Trapping Rain Water"*) or paste your code. CodeMentor automatically extracts the problem description, sets up your code editor, and prepares test cases.
+- **Conceptual Mentorship**: Get clear, encouraging explanations tailored to your skill level without dense compiler errors or robotic jargon.
 
-### 2. Comprehensive Solution Analysis & Logic Breakdown
-- Submit your code in C++, Python, Java, JS/TS, Go, or Rust:
-  - **Pattern Classification**: Identifies underlying algorithms and data structures.
-  - **Correctness Classification**: Evaluates if the solution is `Correct & Optimal`, `Correct but Suboptimal`, `Right Idea, Buggy Implementation`, or `Incorrect Approach`.
-  - **Strengths & Weaknesses**: Highlights clean logic and uncovers hidden pitfalls or memory inefficiencies.
+### 2. Deep Code Analysis & Instant Feedback
+- **Approach & Logic Breakdown**: Understand the algorithmic pattern behind your code (Two Pointers, Sliding Window, Dynamic Programming, etc.).
+- **Complexity Derivations**: View clear asymptotic Time and Space Complexity explanations for your solution.
+- **Compare Approaches**: Compare your current solution against brute-force and optimal approaches side-by-side.
 
-### 3. Pinpoint Bug Diagnosis & Failing Counterexamples
-- **Root Cause Explanation**: Pinpoints exactly *why* your solution fails (e.g., boundary condition, off-by-one pointer error, integer overflow).
-- **Failing Counterexample**: Generates a concrete failing test case contrasting **Your Code's Output** vs. **Expected Output**.
-- **Corrected Code Viewer**: Displays the cleanly corrected code in a Monaco editor with minimal comments and clear guidance.
+### 3. Pinpoint Bug Diagnosis & Counterexamples
+- **Why Does It Fail?**: Discover logic bugs, off-by-one errors, and boundary issues with plain-English explanations.
+- **Concrete Failing Test Cases**: See exact counterexample inputs where your solution breaks, comparing what your code returns vs. the expected answer.
+- **Clean Fixes**: View clean, corrected code with non-intrusive annotations explaining the fix.
 
-### 4. On-Demand Visual Dry Runs (AI-Illustrated Traces)
-- Request a dry run anytime (`"Show dry run"`, `"Trace execution"`).
-- CodeMentor AI generates an educational diagram using **Gemini Multimodal Image Generation** paired with an SVG vector fallback engine.
-- Step-by-step trace showing array indices, pointer updates, hash map states, and recursion tree progress.
-- Includes a full-screen **Lightbox Modal** with download capabilities for offline study.
+### 4. Visual Dry-Run Traces
+- **On-Demand Execution Diagrams**: Ask for a dry run anytime (*"Show dry run"*, *"Trace execution"*) to generate a visual diagram illustrating data structures, pointer movements, and variable updates.
+- **Full-Screen Lightbox**: Zoom in on execution diagrams or download them for offline study.
 
-### 5. Monaco Code Editor & Resizable Split-Pane
-- Embedded **Monaco Code Editor** with dark mode theme (`vs-dark`):
-  - Syntax highlighting for C++, Python, Java, JavaScript, TypeScript, Go, and Rust.
-  - Dual modes: read-only formatted viewing with line numbers + interactive in-place editing.
-  - Full-screen dark foreground popup modal with `Maximize2` button and ESC key listener.
-  - Smooth vertical resizer slider to adjust column widths on desktop.
+### 5. In-Place Code Editor & Multi-Test Manager
+- **Interactive Code Editor**: Syntax-highlighted code editor supporting C++, Python, Java, JavaScript, TypeScript, Go, and Rust.
+- **Dual-Pane Workspace**: Chat comfortably on the left while keeping your active problem, code, and test cases accessible on the right.
+- **Full-Screen Mode**: Expand the code editor or problem statement into a focused full-screen popup modal anytime.
+- **Custom Test Cases**: Add, edit, or delete multiple test cases directly in the workspace panel.
 
-### 6. In-Place Context Editor & Multiple Test Cases
-- Click **"Edit"** in the right preview panel to edit problem statements, solution code, or test cases **directly inside the panel without sending chat messages**.
-- Add, update, and manage multiple test cases per problem (`+ Add Test Case`, delete, copy).
-- Flexible input rules: provide only a problem statement, only code, or both.
+### 6. Interactive Action Chips
+- **One-Click Next Steps**: Dynamic action buttons appear after each explanation (e.g., *"Show Dry Run"*, *"Why is it wrong?"*, *"Show Optimal Solution"*) to guide your learning journey seamlessly.
 
-### 7. User-Isolated Multi-Session History in MongoDB
-- Every session and chat message is linked to the authenticated user's `user_id` and saved in MongoDB (`users`, `dsa_sessions`, and `conversation_history`).
-- Open the **Session History Drawer** to switch between past problems, review prior chats, or delete older sessions.
-- Browser `localStorage` recovery ensures active session persistence on page refreshes.
+### 7. Saved Sessions & History
+- **Personalized Account**: Sign in securely with Google.
+- **Multi-Session History**: Switch between past problem discussions or start fresh sessions anytime from the sidebar drawer.
+
+---
+
+## Project Structure
+
+```text
+├── backend/
+│   ├── agents/               # AI Agent
+│   │   ├── planner.py        # Orchestrates conversations, tool routing & context syncing
+│   │   ├── prompts.py        # System instructions and Agent prompt
+│   │   ├── tool.py           # Mark functions as agent tool
+│   │   ├── tools.py          # 10 specialized DSA analysis and illustration tools
+│   │   └── schemas.py        # Pydantic data schemas and intent definitions
+│   ├── api/
+│   │   └── routes/           # FastAPI API endpoints (auth, query, sessions)
+│   ├── db/
+│   │   └── mongodb.py        # MongoDB connection manager
+│   ├── services/             # Session management, chat history, and dry-run image generation
+│   ├── tests/                # Integration test suite
+│   ├── main.py               # FastAPI Entry point
+│   └── requirements.txt      # Python dependencies
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── auth/         # Google auth modal
+│   │   │   ├── cards/        # Visual UI cards
+│   │   │   ├── chat/         # Chat stream, input area, and dynamic action chips
+│   │   │   ├── common/       # Monaco code editor and Markdown renderer
+│   │   │   ├── home/         # landing page
+│   │   │   └── workspace/    # Dual-pane layout and history drawer
+│   │   ├── context/          # User state provider
+│   │   ├── hooks/            # Custom React hooks
+│   │   ├── registry/         # Component registry mapping AI structured outputs
+│   │   ├── services/         # API communication
+│   │   ├── types/            # TypeScript interfaces
+│   │   └── App.tsx           # Main application router and split-view manager
+│   ├── package.json          # Node dependencies and scripts
+│   └── vite.config.ts        # Vite configuration
+│
+└── README.md                 # Project documentation
+```
 
 ---
 
@@ -71,87 +95,65 @@
 
 ---
 
-## API Architecture
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/api/auth/google` | Sign in or register with Google; returns JWT token & user record |
-| `GET` | `/api/auth/me` | Fetch authenticated user profile from MongoDB |
-| `POST` | `/api/auth/logout` | Logout user |
-| `POST` | `/api/sessions` | Create a new DSA session for authenticated user |
-| `GET` | `/api/sessions` | List active sessions belonging to the authenticated user |
-| `GET` | `/api/sessions/{id}` | Get session details and active context |
-| `POST` | `/api/sessions/{id}/context` | Save/update problem, solution code, and test cases |
-| `GET` | `/api/sessions/{id}/messages` | Retrieve conversation history for a session |
-| `DELETE` | `/api/sessions/{id}` | Delete a session and its message logs |
-| `POST` | `/api/query` | Send natural language prompt to CodeMentor AI agent |
-| `GET` | `/api/health` | Backend and database health status |
-
----
-
-## Setup Guide
+## How to Get Started
 
 ### Prerequisites
-
 - **Python 3.10+** (Python 3.12 recommended)
 - **Node.js 18+** & **npm**
-- **MongoDB** running locally (`mongodb://localhost:27017`) or a free MongoDB Atlas connection string
-- A **Gemini API Key** from [Google AI Studio](https://aistudio.google.com/)
+- **MongoDB** (local installation or MongoDB Atlas free tier)
+- **Gemini API Key** from [Google AI Studio](https://aistudio.google.com/)
 
 ---
 
-### 1. Configure Backend
+### Step 1: Start the Backend
 
-```bash
-cd CodeMentor-AI
+1. Navigate to the project root and create a virtual environment:
+   ```bash
+   # Windows
+   python -m venv venv
+   .\venv\Scripts\Activate.ps1
 
-# Create and activate Python virtual environment
-# Windows:
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+   # macOS / Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
 
-# Linux / macOS:
-python3 -m venv venv
-source venv/bin/activate
+2. Install dependencies:
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
 
-# Install Python dependencies
-pip install -r backend/requirements.txt
-```
+3. Create a `backend/.env` file:
+   ```env
+   GEMINI_API_KEY=your_gemini_api_key
+   MONGODB_URL=mongodb://localhost:27017
+   DB_NAME=codementor_db
+   JWT_SECRET=your_jwt_secret_key
+   ```
 
-Create or verify `backend/.env`:
-```env
-GEMINI_API_KEY=your_gemini_api_key_
-MONGODB_URL=mongodb://localhost:27017
-DB_NAME=codementor_db
-JWT_SECRET=your_jwt_secret_key
-```
-
-Start the FastAPI backend server:
-```bash
-python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
-```
-- **API Base URL**: `http://localhost:8000/api`
-- **Interactive Swagger Docs**: `http://localhost:8000/docs`
+4. Start the backend server:
+   ```bash
+   python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
 
 ---
 
-### 2. Configure Frontend
+### Step 2: Start the Frontend
 
-```bash
-cd CodeMentor-AI/frontend
-npm install
-```
+1. Navigate to the `frontend` directory:
+   ```bash
+   cd frontend
+   npm install
+   ```
 
-Create or verify `frontend/.env`:
-```env
-VITE_API_URL=http://localhost:8000/api
-```
+2. Create a `frontend/.env` file:
+   ```env
+   VITE_API_URL=http://localhost:8000/api
+   ```
 
-Start the Vite development server:
-```bash
-npm run dev
-```
+3. Start the application:
+   ```bash
+   npm run dev
+   ```
 
-Open your browser at: **`http://localhost:5173`**
-
----
+4. Open **`http://localhost:5173`** in your browser and enjoy learning with CodeMentor AI!

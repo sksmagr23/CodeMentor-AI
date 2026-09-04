@@ -18,6 +18,17 @@ from .schemas import (
     StructuredDataType,
     CorrectnessClassification,
 )
+from .prompts import (
+    EXPLAIN_PROBLEM_PROMPT,
+    ANALYZE_SOLUTION_PROMPT,
+    DEBUG_SOLUTION_PROMPT,
+    GENERATE_COUNTEREXAMPLE_PROMPT,
+    GENERATE_DRY_RUN_PROMPT,
+    SHOW_FIX_PROMPT,
+    OPTIMIZE_SOLUTION_PROMPT,
+    COMPARE_SOLUTIONS_PROMPT,
+    EXPLAIN_COMPLEXITY_PROMPT,
+)
 from .intents import build_default_next_actions
 from backend.services.image_generation import generate_dry_run_image
 
@@ -73,9 +84,7 @@ def extract_dynamic_next_actions(
     return [a.model_dump() for a in defaults]
 
 
-# =========================================================================
 # 1. EXPLAIN PROBLEM TOOL
-# =========================================================================
 
 @tool
 def explain_problem_tool(
@@ -85,22 +94,8 @@ def explain_problem_tool(
     Analyzes and explains a DSA problem statement: objective, inputs, outputs,
     constraints, edge cases, pattern, and expected complexity.
     """
-    sys_prompt = """You are a senior DSA problem analyst. Return a JSON object with:
-- title: concise problem title
-- statement_summary: summary of the problem statement
-- objective: core objective
-- inputs: list of input parameters/types
-- outputs: expected output format
-- constraints: list of problem constraints
-- edge_cases: list of potential edge cases to watch out for
-- pattern: algorithmic pattern (e.g. Two Pointers, Sliding Window, DP)
-- expected_time_complexity: expected optimal Big-O time
-- expected_space_complexity: expected optimal Big-O space
-- next_actions: list of 2-3 logical next action objects with 'label' (1-3 words) and 'action_prompt' (exact user follow-up prompt, e.g., 'Show Optimal Solution', 'Explain Approach', 'Show Dry Run')
-"""
     prompt = f"Analyze this DSA problem statement:\n\n{problem_statement}"
-
-    data = call_structured_llm(sys_prompt, prompt)
+    data = call_structured_llm(EXPLAIN_PROBLEM_PROMPT, prompt)
 
     title = data.get("title") or "DSA Problem Analysis"
     pattern = data.get("pattern") or "Algorithmic Pattern"
@@ -136,9 +131,7 @@ def explain_problem_tool(
     }
 
 
-# =========================================================================
 # 3. ANALYZE SOLUTION TOOL
-# =========================================================================
 
 @tool
 def analyze_solution_tool(
@@ -152,22 +145,8 @@ def analyze_solution_tool(
     algorithm, logic breakdown, correctness classification, strengths, weaknesses,
     exact time and space complexity, and dynamic follow-up actions.
     """
-    sys_prompt = """You are a senior DSA mentor. Analyze the user's code against the problem statement.
-Return JSON with:
-- algorithm: name of algorithm used
-- logic: concise explanation of what the code does
-- data_structures: list of data structures used
-- correctness_classification: one of ["correct_and_optimal", "correct_but_suboptimal", "correct_idea_buggy_implementation", "incorrect_approach", "partially_correct"]
-- strengths: list of strengths
-- weaknesses: list of weaknesses or potential pitfalls
-- time_complexity: Big-O time complexity (e.g. O(N))
-- space_complexity: Big-O space complexity (e.g. O(1))
-- time_complexity_reasoning: explanation of why
-- space_complexity_reasoning: explanation of why
-- next_actions: list of 2-3 logical next action objects with 'label' (1-3 words) and 'action_prompt' tailored to whether the code has bugs, is suboptimal, or is already optimal
-"""
     prompt = f"Problem:\n{problem_statement}\n\nLanguage: {language}\n\nCode:\n{solution_code}\n\nInput (if any): {example_input}"
-    data = call_structured_llm(sys_prompt, prompt)
+    data = call_structured_llm(ANALYZE_SOLUTION_PROMPT, prompt)
 
     classification = data.get("correctness_classification", "correct_but_suboptimal")
     algorithm = data.get("algorithm") or "Custom Algorithm"
@@ -206,9 +185,7 @@ Return JSON with:
     }
 
 
-# =========================================================================
 # 4. DEBUG SOLUTION TOOL
-# =========================================================================
 
 @tool
 def debug_solution_tool(
@@ -220,20 +197,8 @@ def debug_solution_tool(
     Pinpoints logic errors, off-by-one errors, edge-case failures, or algorithmic flaws
     in the user's code, providing a clear counterexample and fix.
     """
-    sys_prompt = """You are an expert DSA debugging specialist. Identify bugs and edge-case failures in the code.
-Return JSON with:
-- issue: short description of the bug
-- why_it_fails: detailed explanation of why the logic fails
-- failing_condition: condition or edge case causing the failure
-- counterexample: specific input that breaks the code
-- expected_output: correct expected output for counterexample
-- actual_output: what the user code produces
-- fix: concise guidance on how to fix
-- corrected_code: clean snippet of corrected code with minimal comments (critical invariants only)
-- next_actions: list of 2-3 logical next action objects with 'label' and 'action_prompt' (e.g. 'Show Counterexample', 'Show Dry Run on Failing Case', 'Show Optimal Code')
-"""
     prompt = f"Problem:\n{problem_statement}\n\nLanguage: {language}\n\nCode:\n{solution_code}"
-    data = call_structured_llm(sys_prompt, prompt)
+    data = call_structured_llm(DEBUG_SOLUTION_PROMPT, prompt)
 
     issue = data.get("issue") or "Logic discrepancy identified"
     why_it_fails = data.get("why_it_fails") or "The code fails on boundary inputs."
@@ -267,9 +232,7 @@ Return JSON with:
     }
 
 
-# =========================================================================
 # 5. COUNTEREXAMPLE TOOL
-# =========================================================================
 
 @tool
 def generate_counterexample_tool(
@@ -280,16 +243,8 @@ def generate_counterexample_tool(
     """
     Generates a concrete failing counterexample for the user's solution.
     """
-    sys_prompt = """Generate a specific failing test case / counterexample for the code.
-Return JSON with:
-- counterexample_input: formatted input string
-- expected_output: correct output expected by the problem
-- actual_output: what the user's solution returns or does
-- reason: clear explanation of why the user's logic produces this incorrect output
-- next_actions: list of 2-3 logical next action objects with 'label' and 'action_prompt' (e.g. 'Show Dry Run on this input', 'How to Fix Bug', 'Show Optimal Code')
-"""
     prompt = f"Problem:\n{problem_statement}\n\nLanguage: {language}\n\nCode:\n{solution_code}"
-    data = call_structured_llm(sys_prompt, prompt)
+    data = call_structured_llm(GENERATE_COUNTEREXAMPLE_PROMPT, prompt)
 
     inp = data.get("counterexample_input") or "Sample failing input"
     exp = data.get("expected_output") or "Expected Output"
@@ -320,9 +275,7 @@ Return JSON with:
     }
 
 
-# =========================================================================
 # 6. ON-DEMAND DRY RUN TOOL
-# =========================================================================
 
 @tool
 async def generate_dry_run_tool(
@@ -335,17 +288,8 @@ async def generate_dry_run_tool(
     Generates an educational dry-run visualization and step-by-step trace.
     INVOKE ONLY WHEN USER EXPLICITLY ASKS FOR DRY RUN OR TRACE.
     """
-    sys_prompt = """You are a DSA execution tracer. Create a clear conceptual dry-run trace for the code on an input.
-Return JSON with:
-- problem_title: short problem title
-- algorithm: algorithm name
-- input_used: the exact input used for this trace
-- steps: list of 4-6 concise trace steps showing variable states (e.g. 'Step 1: left=0 (2), right=3 (15), sum=17 > 9 -> decrement right')
-- explanation: summary explanation of the dry run
-- next_actions: list of 2-3 logical next action objects with 'label' and 'action_prompt' (e.g. 'Show Optimal Approach', 'Compare Solutions', 'Explain Complexity')
-"""
     prompt = f"Problem:\n{problem_statement}\n\nLanguage: {language}\n\nCode:\n{solution_code}\n\nInput (or pick a representative test case): {example_input}"
-    data = call_structured_llm(sys_prompt, prompt)
+    data = call_structured_llm(GENERATE_DRY_RUN_PROMPT, prompt)
 
     title = data.get("problem_title") or "DSA Dry Run"
     algorithm = data.get("algorithm") or "Algorithm Trace"
@@ -409,9 +353,7 @@ Return JSON with:
     }
 
 
-# =========================================================================
 # 7. SHOW FIX TOOL
-# =========================================================================
 
 @tool
 def show_fix_tool(
@@ -422,18 +364,8 @@ def show_fix_tool(
     """
     Shows the corrected implementation of the user's approach with highlighted fixes.
     """
-    sys_prompt = """You are a DSA code coach. Provide the cleanly corrected version of the user's code.
-Return JSON with:
-- title: concise title
-- explanation: what was changed and why
-- corrected_code: clean, production-grade code snippet with minimal comments (include only critical invariants/edge conditions, explain details in explanation field)
-- language: programming language
-- time_complexity: Big-O
-- space_complexity: Big-O
-- next_actions: list of 2-3 logical next action objects with 'label' and 'action_prompt' (e.g. 'Dry Run Fixed Code', 'Compare with Original', 'Analyze Complexity')
-"""
     prompt = f"Problem:\n{problem_statement}\n\nLanguage: {language}\n\nOriginal Code:\n{solution_code}"
-    data = call_structured_llm(sys_prompt, prompt)
+    data = call_structured_llm(SHOW_FIX_PROMPT, prompt)
 
     corrected_code = data.get("corrected_code") or solution_code
     explanation = data.get("explanation") or "Corrected boundary handling and indexing."
@@ -466,9 +398,7 @@ Return JSON with:
     }
 
 
-# =========================================================================
 # 8. OPTIMIZE SOLUTION TOOL
-# =========================================================================
 
 @tool
 def optimize_solution_tool(
@@ -480,19 +410,8 @@ def optimize_solution_tool(
     Analyzes whether the user's solution can be optimized, explaining the optimal approach,
     complexity improvements, and providing optimal code.
     """
-    sys_prompt = """You are an algorithm optimization architect. Provide the optimal solution for this DSA problem.
-Return JSON with:
-- approach_name: name of optimal approach (e.g. Two Pointers / Hash Map / DP)
-- time_complexity: optimal time (e.g. O(N))
-- space_complexity: optimal space (e.g. O(1))
-- previous_complexity: estimated user solution complexity (e.g. O(N^2)) or null if no user code
-- explanation: why this approach is optimal and how it reduces redundant work
-- optimal_code: clean, production-grade optimal code snippet with minimal comments (critical invariants only; explain logic in explanation field)
-- tradeoffs: list of tradeoffs
-- next_actions: list of 2-3 logical next action objects with 'label' and 'action_prompt' (e.g. 'Show Dry Run of Optimal', 'Explain Approach Invariants', 'Compare Both Approaches')
-"""
     prompt = f"Problem:\n{problem_statement}\n\nLanguage: {language}\n\nUser Solution (if any):\n{solution_code}"
-    data = call_structured_llm(sys_prompt, prompt)
+    data = call_structured_llm(OPTIMIZE_SOLUTION_PROMPT, prompt)
 
     approach_name = data.get("approach_name") or "Optimal Approach"
     time_comp = data.get("time_complexity") or "O(N)"
@@ -527,9 +446,7 @@ Return JSON with:
     }
 
 
-# =========================================================================
 # 9. COMPARE SOLUTIONS TOOL
-# =========================================================================
 
 @tool
 def compare_solutions_tool(
@@ -540,20 +457,8 @@ def compare_solutions_tool(
     """
     Compares the user's approach with optimal and alternate approaches in a structured comparison card.
     """
-    sys_prompt = """Compare the user's approach against the optimal approach and brute force.
-Return JSON with:
-- user_approach: name and description of user approach
-- user_time: Big-O
-- user_space: Big-O
-- optimal_approach: name and description of optimal approach
-- optimal_time: Big-O
-- optimal_space: Big-O
-- key_differences: list of key algorithmic differences
-- recommendation: final recommendation
-- next_actions: list of 2-3 logical next action objects with 'label' and 'action_prompt' (e.g. 'Show Optimal Code', 'Show Dry Run', 'Explain Edge Cases')
-"""
     prompt = f"Problem:\n{problem_statement}\n\nLanguage: {language}\n\nUser Solution:\n{solution_code}"
-    data = call_structured_llm(sys_prompt, prompt)
+    data = call_structured_llm(COMPARE_SOLUTIONS_PROMPT, prompt)
 
     user_time = data.get("user_time") or "O(N²)"
     opt_time = data.get("optimal_time") or "O(N)"
@@ -587,9 +492,7 @@ Return JSON with:
     }
 
 
-# =========================================================================
 # 10. EXPLAIN COMPLEXITY TOOL
-# =========================================================================
 
 @tool
 def explain_complexity_tool(
@@ -600,19 +503,8 @@ def explain_complexity_tool(
     """
     Provides a detailed mathematical and conceptual breakdown of the time and space complexity.
     """
-    sys_prompt = """Explain time and space complexity of the code in depth.
-Return JSON with:
-- time_complexity: e.g. O(N log N)
-- space_complexity: e.g. O(1)
-- time_breakdown: list of breakdown points explaining each loop/recursion
-- space_breakdown: list of breakdown points explaining memory/stack usage
-- bottleneck: main performance bottleneck
-- best_case: best case Big-O
-- worst_case: worst case Big-O
-- next_actions: list of 2-3 logical next action objects with 'label' and 'action_prompt' (e.g. 'Can We Optimize Further?', 'Show Dry Run', 'Analyze Space Tradeoff')
-"""
     prompt = f"Problem:\n{problem_statement}\n\nLanguage: {language}\n\nCode:\n{solution_code}"
-    data = call_structured_llm(sys_prompt, prompt)
+    data = call_structured_llm(EXPLAIN_COMPLEXITY_PROMPT, prompt)
 
     time_comp = data.get("time_complexity") or "O(N)"
     space_comp = data.get("space_complexity") or "O(1)"

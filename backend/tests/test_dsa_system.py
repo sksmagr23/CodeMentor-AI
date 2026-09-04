@@ -218,3 +218,66 @@ async def test_google_auth_and_user_session_flow():
         assert list_res.status_code == 200
         user_sessions = list_res.json()
         assert any(s["session_id"] == sess_data["session_id"] for s in user_sessions)
+
+
+@pytest.mark.asyncio
+async def test_automatic_context_extraction_from_query():
+    """Test that agent automatically detects referenced problem/code and populates session context."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        sess_res = await ac.post("/api/sessions", json={"user_id": "auto_ctx_user"})
+        assert sess_res.status_code == 200
+        sid = sess_res.json()["session_id"]
+
+        query_res = await ac.post("/api/query", json={
+            "session_id": sid,
+            "query": "How to solve 3Sum?"
+        })
+        assert query_res.status_code == 200
+        data = query_res.json()
+
+        assert data.get("dsa_context") is not None
+        ctx = data["dsa_context"]
+        assert ctx.get("problem") is not None
+        assert "triplet" in ctx["problem"].lower() or "3sum" in ctx["problem"].lower() or "nums" in ctx["problem"].lower()
+        assert ctx.get("solution") is not None
+        assert len(ctx.get("test_cases", [])) > 0
+        assert data["intent"] == DSAIntent.OPTIMIZE_SOLUTION.value
+
+
+@pytest.mark.asyncio
+async def test_non_dry_run_image_refusal():
+    """Test that requests for general non-algorithm images are politely refused."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        res1 = await ac.post("/api/query", json={"query": "Can you generate an image of a cat?"})
+        assert res1.status_code == 200
+        data1 = res1.json()
+        assert "algorithmic dry-run execution traces" in data1["response"]
+        assert "unable to generate artwork, photos, or general images" in data1["response"]
+        assert data1["intent"] == DSAIntent.GENERAL_CHAT.value
+
+        res2 = await ac.post("/api/query", json={"query": "Draw a picture of a sunset"})
+        assert res2.status_code == 200
+        data2 = res2.json()
+        assert "algorithmic dry-run execution traces" in data2["response"]
+
+
+def test_response_sanitizer_prevents_json_leaks():
+    """Test that _sanitize_chat_response strips raw JSON blocks and unpacks internal schemas."""
+    from backend.agents.planner import get_planner
+    planner = get_planner()
+
+    raw_json = '{"response": "Here is how to solve the problem using two pointers.", "next_actions": []}'
+    sanitized = planner._sanitize_chat_response(raw_json)
+    assert sanitized == "Here is how to solve the problem using two pointers."
+
+    wrapped_json = '```json\n{"response": "Clean conversational advice without JSON schemas."}\n```'
+    sanitized2 = planner._sanitize_chat_response(wrapped_json)
+    assert sanitized2 == "Clean conversational advice without JSON schemas."
+
+    internal_block = "Here is my advice.\n```json\n{\"intent\": \"explain_problem\", \"structured_data\": {}}\n```\nKeep practicing!"
+    sanitized3 = planner._sanitize_chat_response(internal_block)
+    assert '"intent"' not in sanitized3
+    assert "Here is my advice." in sanitized3
+    assert "Keep practicing!" in sanitized3

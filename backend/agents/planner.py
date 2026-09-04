@@ -17,11 +17,14 @@ from .schemas import (
     AgentResponse,
     DSAIntent,
     NextAction,
-    StructuredDataType,
     DSASessionContext,
     ChatMessageRecord,
 )
-from .prompts import CODEMENTOR_SYSTEM_INSTRUCTIONS
+from .prompts import (
+    GENERAL_CHAT_SYSTEM_PROMPT,
+    NON_DRY_RUN_IMAGE_REFUSAL_RESPONSE,
+    build_auto_extract_prompt,
+)
 from .intents import build_default_next_actions
 from .tools import (
     explain_problem_tool,
@@ -48,6 +51,77 @@ class DSAPlanner:
         self.session_service = get_session_service()
         self.conversation_service = get_conversation_service()
         self.client = genai.Client(api_key=GEMINI_API_KEY)
+
+    def _is_non_dry_run_image_request(self, query: str) -> bool:
+        """
+        Check if query asks for non-dry-run image/photo/drawing generation.
+        Visual generation is strictly restricted to algorithmic dry-run execution traces.
+        """
+        q = query.lower().strip()
+        if any(term in q for term in ["dry run", "dryrun", "trace", "execution trace", "step trace", "pointer step"]):
+            return False
+
+        image_triggers = [
+            "generate image", "generate an image", "create an image", "create image",
+            "draw an image", "draw a picture", "draw image", "make an image", "paint an image",
+            "generate picture", "generate a photo", "create a picture", "draw a photo",
+            "generate graphic", "generate illustration", "draw me a", "generate a visual of",
+            "generate visuals of", "draw a ", "draw ", "paint "
+        ]
+        if any(t in q for t in image_triggers):
+            return True
+
+        if re.search(r"\b(image|picture|photo|drawing|illustration|artwork)\s+of\b", q):
+            return True
+
+        if re.search(r"\b(generate|create|draw|make|show)\s+(an?\s+)?(image|picture|photo|illustration|drawing|artwork)\b", q):
+            return True
+
+        return False
+
+    def _sanitize_chat_response(self, text: str) -> str:
+        """
+        Guarantees that no raw internal JSON or metadata schemas leak into
+        the conversational chat output presented to the user.
+        """
+        if not text:
+            return ""
+
+        cleaned = text.strip()
+
+        code_block_match = re.search(r"^```(?:json)?\s*(\{[\s\S]*\})\s*```$", cleaned)
+        if code_block_match:
+            try:
+                parsed = json.loads(code_block_match.group(1))
+                if isinstance(parsed, dict):
+                    if "response" in parsed and isinstance(parsed["response"], str):
+                        return parsed["response"].strip()
+                    elif "message" in parsed and isinstance(parsed["message"], str):
+                        return parsed["message"].strip()
+            except Exception:
+                pass
+
+        if cleaned.startswith("{") and cleaned.endswith("}"):
+            try:
+                parsed = json.loads(cleaned)
+                if isinstance(parsed, dict):
+                    if "response" in parsed and isinstance(parsed["response"], str):
+                        return parsed["response"].strip()
+                    elif "message" in parsed and isinstance(parsed["message"], str):
+                        return parsed["message"].strip()
+            except Exception:
+                pass
+
+        def _strip_internal_json_block(match: re.Match) -> str:
+            content = match.group(1)
+            internal_keys = ['"intent"', '"structured_data"', '"problem_understanding"', '"steps":', '"correctness_classification"']
+            if any(k in content for k in internal_keys):
+                return ""
+            return match.group(0)
+
+        cleaned = re.sub(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", _strip_internal_json_block, cleaned)
+
+        return cleaned.strip()
 
     def _is_analysis_requested(self, query: str) -> bool:
         """Check if query requests code/solution analysis."""
@@ -80,30 +154,36 @@ class DSAPlanner:
         self, session: DSASessionContext, query: str
     ) -> Tuple[DSASessionContext, bool]:
         """
-        Detects if the user is introducing a new DSA problem statement or new solution code
-        within an ongoing chat session. If detected, updates MongoDB context in-place.
+        Intelligently detects if the user is providing code, stating a problem,
+        referencing a known problem (e.g. '3Sum', 'Trapping Rain Water'), or asking to solve/analyze code.
+        Automatically populates canonical problem statements, code, languages, and test cases
+        into the persistent MongoDB context so manual feeding is never required.
         """
-        indicators = [
-            "new problem", "another problem", "next problem", "let's solve", "now solve",
-            "given an array", "given a string", "given an integer", "given the head",
-            "given two", "given a binary", "given a linked", "class Solution",
-            "def ", "vector<", "public int", "function ", "func ", "fn ", "```"
-        ]
-        q_lower = query.lower()
-        has_indicator = any(ind in q_lower for ind in indicators) or len(query) > 100
+        clean_query = query.strip()
+        q_lower = clean_query.lower()
 
-        if not has_indicator:
+        simple_chit_chat = [
+            "hi", "hello", "hey", "hola", "good morning", "good evening",
+            "who are you", "what can you do", "help", "thanks", "thank you",
+            "cool", "nice", "awesome", "bye", "goodbye"
+        ]
+        if q_lower in simple_chit_chat:
             return session, False
 
-        sys_prompt = """You are a DSA problem & code extractor.
-Analyze the user's message to determine if they are providing or updating a problem statement or solution code.
-Return JSON with:
-- is_new_problem: true if a problem statement or solution code is provided in this message, else false
-- problem: extracted problem statement text (or null if not provided in message)
-- solution: extracted code snippet (or null if not provided in message)
-- language: detected programming language (cpp, python, java, javascript, go, rust) or null
-- active_input: sample input if provided or null
-"""
+        blind_questions = [
+            "why is my solution wrong", "why is my code wrong", "why is it wrong",
+            "is my solution correct", "is my code correct", "debug my code",
+            "what is wrong with my code", "find bug in my code", "counterexample",
+            "give me a counterexample"
+        ]
+        if q_lower in blind_questions and not any(ch in clean_query for ch in ["{", "}", "(", ")", "=", ";", ":", "\n"]):
+            return session, False
+
+        sys_prompt = build_auto_extract_prompt(
+            active_problem=session.problem or "",
+            has_code=bool(session.solution),
+            language=session.language or "cpp",
+        )
         try:
             config = types.GenerateContentConfig(
                 system_instruction=sys_prompt,
@@ -112,27 +192,49 @@ Return JSON with:
             )
             res = self.client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=query,
+                contents=clean_query,
                 config=config,
             )
             data = json.loads(res.text or "{}")
-            if data.get("is_new_problem"):
-                new_prob = data.get("problem") or session.problem
-                new_sol = data.get("solution") or session.solution
-                new_lang = data.get("language") or session.language or "cpp"
-                new_input = data.get("active_input") or session.active_input or ""
+            if data.get("has_dsa_context"):
+                prob_stmt = data.get("problem_statement")
+                sol_code = data.get("solution")
+                det_lang = data.get("language") or session.language or "cpp"
+                test_cases = data.get("test_cases") or []
+                active_in = data.get("active_input") or (test_cases[0] if test_cases else None)
+                is_diff = data.get("is_different_problem", False)
 
-                if (new_prob and new_prob != session.problem) or (new_sol and new_sol != session.solution):
+                # If it is a brand-new or different problem:
+                if is_diff or (prob_stmt and not session.problem):
+                    new_prob = prob_stmt or session.problem
+                    new_sol = sol_code if sol_code else (session.solution if not is_diff else None)
+                    new_tc = test_cases if test_cases else session.test_cases
+                    new_in = active_in if active_in else session.active_input
+
                     updated_session = self.session_service.update_context(
                         session_id=session.session_id,
-                        problem=new_prob or "",
-                        solution=new_sol or "",
-                        language=new_lang,
-                        active_input=new_input,
+                        problem=new_prob,
+                        solution=new_sol,
+                        language=det_lang,
+                        active_input=new_in,
+                        test_cases=new_tc,
                     )
+                    logger.info(f"[DSAPlanner] Auto-populated problem context: {data.get('problem_title')} (is_diff={is_diff})")
                     return updated_session, True
+
+                elif sol_code and sol_code != session.solution:
+                    updated_session = self.session_service.update_context(
+                        session_id=session.session_id,
+                        solution=sol_code,
+                        language=det_lang,
+                        active_input=active_in or session.active_input,
+                        test_cases=test_cases if test_cases else session.test_cases,
+                    )
+                    logger.info(f"[DSAPlanner] Auto-populated user code in context (lang={det_lang})")
+                    return updated_session, True
+
         except Exception as e:
-            logger.warning(f"[DSAPlanner] Failed to detect new problem: {e}")
+            logger.warning(f"[DSAPlanner] Failed to auto-extract problem context: {e}")
 
         return session, False
 
@@ -201,15 +303,27 @@ Return JSON with:
         clean_query = query.strip()
         q_lower = clean_query.lower()
 
-        # Check if user introduced a new problem or solution in this chat message
         session, is_switched = self._detect_and_update_new_problem(session, clean_query)
 
         has_problem = bool(session.problem and session.problem.strip())
         has_solution = bool(session.solution and session.solution.strip())
 
-        # -------------------------------------------------------------
+        if self._is_non_dry_run_image_request(clean_query):
+            return AgentResponse(
+                session_id=session.session_id,
+                response=NON_DRY_RUN_IMAGE_REFUSAL_RESPONSE,
+                intent=DSAIntent.GENERAL_CHAT.value,
+                structured_data=None,
+                next_actions=[
+                    NextAction(label="Show Dry Run", action_prompt="Show me a step-by-step dry run"),
+                    NextAction(label="Explain Problem", action_prompt="Explain the problem statement and constraints"),
+                    NextAction(label="Optimal Solution", action_prompt="Show the optimal solution and approach"),
+                ],
+                dsa_context=session.model_dump(),
+                new_session=is_new_session,
+            )
+
         # 1. ON-DEMAND DRY RUN REQUEST
-        # -------------------------------------------------------------
         if self._is_dry_run_requested(clean_query):
             if not has_problem and not has_solution:
                 return AgentResponse(
@@ -234,7 +348,7 @@ Return JSON with:
             )
             return AgentResponse(
                 session_id=session.session_id,
-                response=dry_run_res["response"],
+                response=self._sanitize_chat_response(dry_run_res["response"]),
                 intent=dry_run_res["intent"],
                 structured_data=dry_run_res["structured_data"],
                 next_actions=[NextAction(**a) for a in dry_run_res["next_actions"]],
@@ -242,19 +356,148 @@ Return JSON with:
                 new_session=is_new_session,
             )
 
-        # -------------------------------------------------------------
-        # 2. SOLVE / PROVIDE SOLUTION REQUEST (even if user gave NO code)
-        # -------------------------------------------------------------
-        if self._is_solution_requested(clean_query) or "optimal solution" in q_lower or "how to solve" in q_lower:
+        # 2. SHOW FIX / CORRECTED CODE
+        if "fix" in q_lower or "corrected" in q_lower or "correct my" in q_lower:
+            if has_solution:
+                fix_res = show_fix_tool(
+                    problem_statement=session.problem or "",
+                    solution_code=session.solution or "",
+                    language=session.language or "cpp",
+                )
+                if fix_res.get("structured_data") and fix_res["structured_data"].get("corrected_code"):
+                    corrected_code = fix_res["structured_data"]["corrected_code"]
+                    session = self.session_service.update_context(
+                        session_id=session.session_id,
+                        solution=corrected_code,
+                        language=session.language or "cpp",
+                    )
+                return AgentResponse(
+                    session_id=session.session_id,
+                    response=self._sanitize_chat_response(fix_res["response"]),
+                    intent=fix_res["intent"],
+                    structured_data=fix_res["structured_data"],
+                    next_actions=[NextAction(**a) for a in fix_res["next_actions"]],
+                    dsa_context=session.model_dump(),
+                    new_session=is_new_session,
+                )
+            elif has_problem:
+                opt_res = optimize_solution_tool(
+                    problem_statement=session.problem or "",
+                    solution_code="",
+                    language=session.language or "cpp",
+                )
+                return AgentResponse(
+                    session_id=session.session_id,
+                    response=self._sanitize_chat_response(opt_res["response"]),
+                    intent=opt_res["intent"],
+                    structured_data=opt_res["structured_data"],
+                    next_actions=[NextAction(**a) for a in opt_res["next_actions"]],
+                    dsa_context=session.model_dump(),
+                    new_session=is_new_session,
+                )
+            else:
+                return AgentResponse(
+                    session_id=session.session_id,
+                    response="To provide a fix or corrected code, please provide your solution code in the **Active Context** panel on the right (or paste it directly in chat).",
+                    intent=DSAIntent.GENERAL_CHAT.value,
+                    structured_data=None,
+                    next_actions=[
+                        NextAction(label="Common Patterns", action_prompt="What are the most common DSA patterns used in technical interviews?"),
+                    ],
+                    dsa_context=session.model_dump(),
+                    new_session=is_new_session,
+                )
+
+        # 3. DEBUG / FIND BUG / WHY IS CODE WRONG
+        if "why is" in q_lower or "bug" in q_lower or "wrong" in q_lower or "debug" in q_lower or "fails" in q_lower:
+            if has_solution:
+                dbg_res = debug_solution_tool(
+                    problem_statement=session.problem or "Analyzed DSA Problem",
+                    solution_code=session.solution or "",
+                    language=session.language or "cpp",
+                )
+                return AgentResponse(
+                    session_id=session.session_id,
+                    response=self._sanitize_chat_response(dbg_res["response"]),
+                    intent=dbg_res["intent"],
+                    structured_data=dbg_res["structured_data"],
+                    next_actions=[NextAction(**a) for a in dbg_res["next_actions"]],
+                    dsa_context=session.model_dump(),
+                    new_session=is_new_session,
+                )
+            else:
+                return AgentResponse(
+                    session_id=session.session_id,
+                    response="To debug your logic and identify edge-case failures, please enter your solution code in the **Active Context** panel on the right (or paste it directly in chat).",
+                    intent=DSAIntent.GENERAL_CHAT.value,
+                    structured_data=None,
+                    next_actions=[
+                        NextAction(label="Analyze Approach", action_prompt="Can you explain how to debug edge cases in algorithms?"),
+                    ],
+                    dsa_context=session.model_dump(),
+                    new_session=is_new_session,
+                )
+
+        # 4. COUNTEREXAMPLE / FAILING TEST CASE
+        if "counterexample" in q_lower or "failing test" in q_lower or "edge case" in q_lower or "break my code" in q_lower:
+            if has_solution:
+                ce_res = generate_counterexample_tool(
+                    problem_statement=session.problem or "DSA Problem",
+                    solution_code=session.solution or "",
+                    language=session.language or "cpp",
+                )
+                return AgentResponse(
+                    session_id=session.session_id,
+                    response=self._sanitize_chat_response(ce_res["response"]),
+                    intent=ce_res["intent"],
+                    structured_data=ce_res["structured_data"],
+                    next_actions=[NextAction(**a) for a in ce_res["next_actions"]],
+                    dsa_context=session.model_dump(),
+                    new_session=is_new_session,
+                )
+            elif has_problem:
+                exp_res = explain_problem_tool(problem_statement=session.problem or "")
+                return AgentResponse(
+                    session_id=session.session_id,
+                    response=self._sanitize_chat_response(exp_res["response"]),
+                    intent=exp_res["intent"],
+                    structured_data=exp_res["structured_data"],
+                    next_actions=[NextAction(**a) for a in exp_res["next_actions"]],
+                    dsa_context=session.model_dump(),
+                    new_session=is_new_session,
+                )
+            else:
+                return AgentResponse(
+                    session_id=session.session_id,
+                    response="To generate a failing counterexample, please enter your solution code and problem statement in the **Active Context** panel on the right (or paste them directly in chat).",
+                    intent=DSAIntent.GENERAL_CHAT.value,
+                    structured_data=None,
+                    next_actions=[
+                        NextAction(label="Common Edge Cases", action_prompt="What are the most common edge cases to watch out for in arrays and strings?"),
+                    ],
+                    dsa_context=session.model_dump(),
+                    new_session=is_new_session,
+                )
+
+        # 5. SOLVE / PROVIDE SOLUTION / OPTIMAL SOLUTION
+        if self._is_solution_requested(clean_query) or "optimal" in q_lower or "how to solve" in q_lower or "solve this" in q_lower:
             if has_problem:
                 opt_res = optimize_solution_tool(
                     problem_statement=session.problem or "",
                     solution_code=session.solution or "",
                     language=session.language or "cpp",
                 )
+                if opt_res.get("structured_data") and opt_res["structured_data"].get("optimal_code"):
+                    optimal_code = opt_res["structured_data"]["optimal_code"]
+                    if not session.solution or not session.solution.strip():
+                        session = self.session_service.update_context(
+                            session_id=session.session_id,
+                            solution=optimal_code,
+                            language=session.language or "cpp",
+                        )
                 return AgentResponse(
                     session_id=session.session_id,
-                    response=opt_res["response"],
+                    response=self._sanitize_chat_response(opt_res["response"]),
                     intent=opt_res["intent"],
                     structured_data=opt_res["structured_data"],
                     next_actions=[NextAction(**a) for a in opt_res["next_actions"]],
@@ -275,54 +518,20 @@ Return JSON with:
                     new_session=is_new_session,
                 )
 
-        # -------------------------------------------------------------
-        # 3. DEBUG / FIND BUG / WHY IS CODE WRONG
-        # -------------------------------------------------------------
-        if "why is" in q_lower or "bug" in q_lower or "wrong" in q_lower or "debug" in q_lower or "fails" in q_lower:
+        # 6. COMPLEXITY ANALYSIS
+        if "complexity" in q_lower or "big o" in q_lower or "time complexity" in q_lower or "space complexity" in q_lower:
             if has_solution:
-                dbg_res = debug_solution_tool(
-                    problem_statement=session.problem or "Analyzed DSA Problem",
+                cmplx_res = explain_complexity_tool(
+                    problem_statement=session.problem or "",
                     solution_code=session.solution or "",
                     language=session.language or "cpp",
                 )
                 return AgentResponse(
                     session_id=session.session_id,
-                    response=dbg_res["response"],
-                    intent=dbg_res["intent"],
-                    structured_data=dbg_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in dbg_res["next_actions"]],
-                    dsa_context=session.model_dump(),
-                    new_session=is_new_session,
-                )
-            else:
-                return AgentResponse(
-                    session_id=session.session_id,
-                    response="To debug your logic and identify edge-case failures, please enter your solution code in the **Active Context** panel on the right (or paste it directly in chat).",
-                    intent=DSAIntent.GENERAL_CHAT.value,
-                    structured_data=None,
-                    next_actions=[
-                        NextAction(label="Analyze Approach", action_prompt="Can you explain how to debug edge cases in algorithms?"),
-                    ],
-                    dsa_context=session.model_dump(),
-                    new_session=is_new_session,
-                )
-
-        # -------------------------------------------------------------
-        # 4. COUNTEREXAMPLE / FAILING TEST CASE
-        # -------------------------------------------------------------
-        if "counterexample" in q_lower or "failing test" in q_lower or "edge case" in q_lower:
-            if has_solution:
-                ce_res = generate_counterexample_tool(
-                    problem_statement=session.problem or "DSA Problem",
-                    solution_code=session.solution or "",
-                    language=session.language or "cpp",
-                )
-                return AgentResponse(
-                    session_id=session.session_id,
-                    response=ce_res["response"],
-                    intent=ce_res["intent"],
-                    structured_data=ce_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in ce_res["next_actions"]],
+                    response=self._sanitize_chat_response(cmplx_res["response"]),
+                    intent=cmplx_res["intent"],
+                    structured_data=cmplx_res["structured_data"],
+                    next_actions=[NextAction(**a) for a in cmplx_res["next_actions"]],
                     dsa_context=session.model_dump(),
                     new_session=is_new_session,
                 )
@@ -330,7 +539,39 @@ Return JSON with:
                 exp_res = explain_problem_tool(problem_statement=session.problem or "")
                 return AgentResponse(
                     session_id=session.session_id,
-                    response=exp_res["response"],
+                    response=self._sanitize_chat_response(exp_res["response"]),
+                    intent=exp_res["intent"],
+                    structured_data=exp_res["structured_data"],
+                    next_actions=[NextAction(**a) for a in exp_res["next_actions"]],
+                    dsa_context=session.model_dump(),
+                    new_session=is_new_session,
+                )
+
+        # 7. COMPARE SOLUTIONS
+        if "compare" in q_lower:
+            if has_solution:
+                cmp_res = compare_solutions_tool(
+                    problem_statement=session.problem or "",
+                    solution_code=session.solution or "",
+                    language=session.language or "cpp",
+                )
+                return AgentResponse(
+                    session_id=session.session_id,
+                    response=self._sanitize_chat_response(cmp_res["response"]),
+                    intent=cmp_res["intent"],
+                    structured_data=cmp_res["structured_data"],
+                    next_actions=[NextAction(**a) for a in cmp_res["next_actions"]],
+                    dsa_context=session.model_dump(),
+                    new_session=is_new_session,
+                )
+
+        # 8. EXPLAIN PROBLEM STATEMENT
+        if "explain problem" in q_lower or "understand problem" in q_lower or "problem breakdown" in q_lower or "clarify problem" in q_lower:
+            if has_problem:
+                exp_res = explain_problem_tool(problem_statement=session.problem or "")
+                return AgentResponse(
+                    session_id=session.session_id,
+                    response=self._sanitize_chat_response(exp_res["response"]),
                     intent=exp_res["intent"],
                     structured_data=exp_res["structured_data"],
                     next_actions=[NextAction(**a) for a in exp_res["next_actions"]],
@@ -340,20 +581,18 @@ Return JSON with:
             else:
                 return AgentResponse(
                     session_id=session.session_id,
-                    response="To generate a failing counterexample, please enter your solution code and problem statement in the **Active Context** panel on the right (or paste them directly in chat).",
+                    response="Please enter the problem statement in the **Active Context** panel on the right (or paste it directly in chat) so I can break it down for you.",
                     intent=DSAIntent.GENERAL_CHAT.value,
                     structured_data=None,
                     next_actions=[
-                        NextAction(label="Common Edge Cases", action_prompt="What are the most common edge cases to watch out for in arrays and strings?"),
+                        NextAction(label="Common Patterns", action_prompt="What are the most common DSA patterns used in technical interviews?"),
                     ],
                     dsa_context=session.model_dump(),
                     new_session=is_new_session,
                 )
 
-        # -------------------------------------------------------------
-        # 5. UNDERSTAND APPROACH / ANALYZE SOLUTION
-        # -------------------------------------------------------------
-        if "approach" in q_lower or "analyze" in q_lower or "review" in q_lower or "understand my" in q_lower or "explain my" in q_lower:
+        # 9. UNDERSTAND APPROACH / ANALYZE SOLUTION
+        if "approach" in q_lower or "analyze" in q_lower or "review" in q_lower or "understand my" in q_lower or "explain my" in q_lower or "is my solution" in q_lower or "check my code" in q_lower:
             if has_solution:
                 ana_res = analyze_solution_tool(
                     problem_statement=session.problem or "DSA Code Logic",
@@ -363,7 +602,7 @@ Return JSON with:
                 )
                 return AgentResponse(
                     session_id=session.session_id,
-                    response=ana_res["response"],
+                    response=self._sanitize_chat_response(ana_res["response"]),
                     intent=ana_res["intent"],
                     structured_data=ana_res["structured_data"],
                     next_actions=[NextAction(**a) for a in ana_res["next_actions"]],
@@ -374,7 +613,7 @@ Return JSON with:
                 exp_res = explain_problem_tool(problem_statement=session.problem or "")
                 return AgentResponse(
                     session_id=session.session_id,
-                    response=exp_res["response"],
+                    response=self._sanitize_chat_response(exp_res["response"]),
                     intent=exp_res["intent"],
                     structured_data=exp_res["structured_data"],
                     next_actions=[NextAction(**a) for a in exp_res["next_actions"]],
@@ -395,119 +634,11 @@ Return JSON with:
                     new_session=is_new_session,
                 )
 
-        # -------------------------------------------------------------
-        # 6. COMPLEXITY ANALYSIS
-        # -------------------------------------------------------------
-        if "complexity" in q_lower or "big o" in q_lower or "time complexity" in q_lower or "space complexity" in q_lower:
-            if has_solution:
-                cmplx_res = explain_complexity_tool(
-                    problem_statement=session.problem or "",
-                    solution_code=session.solution or "",
-                    language=session.language or "cpp",
-                )
-                return AgentResponse(
-                    session_id=session.session_id,
-                    response=cmplx_res["response"],
-                    intent=cmplx_res["intent"],
-                    structured_data=cmplx_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in cmplx_res["next_actions"]],
-                    dsa_context=session.model_dump(),
-                    new_session=is_new_session,
-                )
-            elif has_problem:
-                exp_res = explain_problem_tool(problem_statement=session.problem or "")
-                return AgentResponse(
-                    session_id=session.session_id,
-                    response=exp_res["response"],
-                    intent=exp_res["intent"],
-                    structured_data=exp_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in exp_res["next_actions"]],
-                    dsa_context=session.model_dump(),
-                    new_session=is_new_session,
-                )
-
-        # -------------------------------------------------------------
-        # 7. COMPARE SOLUTIONS
-        # -------------------------------------------------------------
-        if "compare" in q_lower:
-            if has_solution:
-                cmp_res = compare_solutions_tool(
-                    problem_statement=session.problem or "",
-                    solution_code=session.solution or "",
-                    language=session.language or "cpp",
-                )
-                return AgentResponse(
-                    session_id=session.session_id,
-                    response=cmp_res["response"],
-                    intent=cmp_res["intent"],
-                    structured_data=cmp_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in cmp_res["next_actions"]],
-                    dsa_context=session.model_dump(),
-                    new_session=is_new_session,
-                )
-
-        # -------------------------------------------------------------
-        # 8. SHOW FIX / CORRECTED CODE
-        # -------------------------------------------------------------
-        if "fix" in q_lower or "corrected" in q_lower:
-            if has_solution:
-                fix_res = show_fix_tool(
-                    problem_statement=session.problem or "",
-                    solution_code=session.solution or "",
-                    language=session.language or "cpp",
-                )
-                return AgentResponse(
-                    session_id=session.session_id,
-                    response=fix_res["response"],
-                    intent=fix_res["intent"],
-                    structured_data=fix_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in fix_res["next_actions"]],
-                    dsa_context=session.model_dump(),
-                    new_session=is_new_session,
-                )
-
-        # -------------------------------------------------------------
-        # 9. EXPLAIN PROBLEM STATEMENT
-        # -------------------------------------------------------------
-        if "explain problem" in q_lower or "understand problem" in q_lower or "problem breakdown" in q_lower:
-            if has_problem:
-                exp_res = explain_problem_tool(problem_statement=session.problem or "")
-                return AgentResponse(
-                    session_id=session.session_id,
-                    response=exp_res["response"],
-                    intent=exp_res["intent"],
-                    structured_data=exp_res["structured_data"],
-                    next_actions=[NextAction(**a) for a in exp_res["next_actions"]],
-                    dsa_context=session.model_dump(),
-                    new_session=is_new_session,
-                )
-            else:
-                return AgentResponse(
-                    session_id=session.session_id,
-                    response="Please enter the problem statement in the **Active Context** panel on the right (or paste it directly in chat) so I can break it down for you.",
-                    intent=DSAIntent.GENERAL_CHAT.value,
-                    structured_data=None,
-                    next_actions=[
-                        NextAction(label="Common Patterns", action_prompt="What are the most common DSA patterns used in technical interviews?"),
-                    ],
-                    dsa_context=session.model_dump(),
-                    new_session=is_new_session,
-                )
-
-        # -------------------------------------------------------------
         # 10. GENERAL CHAT / THEORETICAL CONCEPTS
-        # -------------------------------------------------------------
         augmented_prompt = self._build_context_prompt(session, clean_query, recent_messages)
-        sys_prompt = CODEMENTOR_SYSTEM_INSTRUCTIONS + """
-CRITICAL: Return a JSON object with:
-- response: your comprehensive, insightful, encouraging conversational markdown response
-- next_actions: list of 2-3 contextual next action suggestion chips dynamically tailored to what was discussed. Each object must have:
-  * label: short button title (1-3 words)
-  * action_prompt: exact actionable query prompt to send
-"""
         try:
             config = types.GenerateContentConfig(
-                system_instruction=sys_prompt,
+                system_instruction=GENERAL_CHAT_SYSTEM_PROMPT,
                 response_mime_type="application/json",
                 temperature=0.7,
             )
@@ -538,7 +669,7 @@ CRITICAL: Return a JSON object with:
 
         return AgentResponse(
             session_id=session.session_id,
-            response=chat_text,
+            response=self._sanitize_chat_response(chat_text),
             intent=DSAIntent.GENERAL_CHAT.value,
             structured_data=None,
             next_actions=actions,

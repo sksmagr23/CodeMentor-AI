@@ -74,21 +74,32 @@ class DSASessionService:
     def update_context(
         self,
         session_id: str,
-        context: ContextUpdateRequest,
-        user_id: str = "default_user"
+        context: Optional[ContextUpdateRequest] = None,
+        user_id: str = "default_user",
+        problem: Optional[str] = None,
+        solution: Optional[str] = None,
+        language: Optional[str] = None,
+        active_input: Optional[str] = None,
+        test_cases: Optional[List[str]] = None,
     ) -> DSASessionContext:
-        """Update problem, solution, language, active input, and test cases in session."""
-        now = datetime.now(timezone.utc)
-        active_in = context.active_input
-        if not active_in and context.test_cases:
-            active_in = context.test_cases[0]
+        """Update problem, solution, language, active input, and test cases in session, supporting partial updates."""
+        existing = self.get_session(session_id)
 
+        prob = problem if problem is not None else (context.problem if context else (existing.problem if existing else None))
+        sol = solution if solution is not None else (context.solution if context else (existing.solution if existing else None))
+        lang = language if language is not None else (context.language if context else (existing.language if existing else "cpp"))
+        tc = test_cases if test_cases is not None else (context.test_cases if context else (existing.test_cases if existing else []))
+        act_in = active_input if active_input is not None else (context.active_input if context else (existing.active_input if existing else None))
+        if not act_in and tc:
+            act_in = tc[0]
+
+        now = datetime.now(timezone.utc)
         update_fields = {
-            "problem": context.problem,
-            "solution": context.solution,
-            "language": context.language,
-            "active_input": active_in,
-            "test_cases": context.test_cases or [],
+            "problem": prob,
+            "solution": sol,
+            "language": lang,
+            "active_input": act_in,
+            "test_cases": tc or [],
             "updated_at": now,
         }
 
