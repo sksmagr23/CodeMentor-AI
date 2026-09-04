@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.db.mongodb import get_db_manager
 from backend.api.routes.query import router as query_router
 from backend.api.routes.sessions import router as sessions_router
+from backend.api.routes.auth import router as auth_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,6 +47,7 @@ app.add_middleware(
 )
 
 api_router = APIRouter(prefix="/api")
+api_router.include_router(auth_router)
 api_router.include_router(query_router)
 api_router.include_router(sessions_router)
 
@@ -60,6 +62,7 @@ async def health_check():
     }
 
 app.include_router(api_router)
+app.include_router(auth_router)
 app.include_router(query_router)
 app.include_router(sessions_router)
 

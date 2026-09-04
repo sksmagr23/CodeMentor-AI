@@ -4,7 +4,9 @@ Processes user queries within the active session, coordinates intent handling,
 and logs chronological conversation history in MongoDB.
 """
 import logging
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from typing import Optional
+from backend.services.auth import get_current_user_optional
 
 from backend.agents.schemas import QueryRequest, AgentResponse
 from backend.services.session import get_session_service
@@ -17,15 +19,20 @@ router = APIRouter(prefix="/query", tags=["query"])
 
 
 @router.post("", response_model=AgentResponse, summary="Send a query to CodeMentor AI")
-async def process_query(request: QueryRequest):
+async def process_query(
+    request: QueryRequest,
+    current_user: Optional[dict] = Depends(get_current_user_optional),
+):
     session_service = get_session_service()
     conversation_service = get_conversation_service()
     planner = get_planner()
     is_new_session = not bool(request.session_id)
 
+    target_user_id = current_user["user_id"] if current_user else (request.user_id or "default_user")
+
     session = session_service.get_or_create_session(
         session_id=request.session_id,
-        user_id=request.user_id or "default_user",
+        user_id=target_user_id,
     )
     session_id = session.session_id
     user_id = session.user_id

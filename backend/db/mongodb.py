@@ -62,8 +62,15 @@ class MongoDBManager:
 
             db["conversation_history"].create_index([("session_id", ASCENDING), ("created_at", ASCENDING)])
             db["conversation_history"].create_index([("user_id", ASCENDING)])
+
+            db["users"].create_index([("user_id", ASCENDING)], unique=True)
+            db["users"].create_index([("email", ASCENDING)], unique=True)
         except Exception as e:
             logger.warning(f"{e}")
+
+    @property
+    def users(self) -> Collection:
+        return self.get_database()["users"]
 
     @property
     def dsa_sessions(self) -> Collection:

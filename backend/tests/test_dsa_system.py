@@ -177,5 +177,44 @@ async def test_full_dsa_analysis_flow():
         hist_res = await ac.get(f"/api/sessions/{sid}/messages")
         assert hist_res.status_code == 200
         messages = hist_res.json()
-        
         assert len(messages) >= 12
+
+
+@pytest.mark.asyncio
+async def test_google_auth_and_user_session_flow():
+    """Test Backend Google Authentication, JWT verification, and user session isolation."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # 1. Login with Google
+        auth_res = await ac.post("/api/auth/google", json={
+            "email": "test.engineer@google.com",
+            "name": "Test Google Engineer",
+            "avatar_url": "https://example.com/avatar.png",
+            "google_id": "goog_123456789",
+        })
+        assert auth_res.status_code == 200
+        auth_data = auth_res.json()
+        token = auth_data["access_token"]
+        user_id = auth_data["user"]["id"]
+        assert token is not None
+        assert auth_data["user"]["email"] == "test.engineer@google.com"
+
+        # 2. Verify /api/auth/me with Bearer token
+        headers = {"Authorization": f"Bearer {token}"}
+        me_res = await ac.get("/api/auth/me", headers=headers)
+        assert me_res.status_code == 200
+        me_data = me_res.json()
+        assert me_data["id"] == user_id
+        assert me_data["email"] == "test.engineer@google.com"
+
+        # 3. Create session for this authenticated user
+        sess_res = await ac.post("/api/sessions", headers=headers, json={})
+        assert sess_res.status_code == 200
+        sess_data = sess_res.json()
+        assert sess_data["user_id"] == user_id
+
+        # 4. List sessions for this authenticated user
+        list_res = await ac.get("/api/sessions", headers=headers)
+        assert list_res.status_code == 200
+        user_sessions = list_res.json()
+        assert any(s["session_id"] == sess_data["session_id"] for s in user_sessions)

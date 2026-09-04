@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from './context/AuthContext';
 import { useChatSession } from './hooks/useChatSession';
 import { Header } from './components/workspace/Header';
 import { WorkspacePanel } from './components/workspace/WorkspacePanel';
 import { SessionSidebar } from './components/workspace/SessionSidebar';
 import { ChatContainer } from './components/chat/ChatContainer';
 import { ChatInput } from './components/chat/ChatInput';
+import { HomePage } from './components/home/HomePage';
+import { GoogleAuthModal } from './components/auth/GoogleAuthModal';
 
 export const App: React.FC = () => {
+  const { isAuthenticated, openAuthModal } = useAuth();
   const {
     sessionId,
     sessionContext,
@@ -19,6 +23,7 @@ export const App: React.FC = () => {
     loadSession,
   } = useChatSession();
 
+  const [currentView, setCurrentView] = useState<'home' | 'workspace'>('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [leftWidth, setLeftWidth] = useState<number>(() => {
@@ -27,6 +32,37 @@ export const App: React.FC = () => {
   });
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleNavigate = (view: 'home' | 'workspace') => {
+    if (view === 'workspace' && !isAuthenticated) {
+      openAuthModal();
+      return;
+    }
+    setCurrentView(view);
+  };
+
+  const handleLaunchWorkspace = () => {
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
+    setCurrentView('workspace');
+  };
+
+  const handleStartNewSession = async () => {
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
+    await startNewSession();
+    setCurrentView('workspace');
+  };
+
+  const handleSelectSessionFromHistory = (sid: string) => {
+    loadSession(sid);
+    setIsSidebarOpen(false);
+    setCurrentView('workspace');
+  };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -66,63 +102,75 @@ export const App: React.FC = () => {
     <div className="flex flex-col h-screen w-screen bg-[#0B0F17] text-slate-100 font-sans overflow-hidden antialiased">
       <Header
         sessionId={sessionId}
-        onNewSession={startNewSession}
+        currentView={currentView}
+        onNavigate={handleNavigate}
+        onNewSession={handleStartNewSession}
         onToggleSidebar={() => setIsSidebarOpen(true)}
         isSidebarOpen={isSidebarOpen}
       />
 
-      <div ref={containerRef} className="flex flex-col md:flex-row flex-1 overflow-hidden relative">
-        <main
-          className="flex flex-col bg-slate-950/40 relative overflow-hidden h-full"
-          style={{ width: window.innerWidth >= 768 ? `${leftWidth}%` : '100%' }}
-        >
-          {error && (
-            <div className="bg-red-950/80 border-b border-red-500/30 px-4 py-2 text-xs text-red-300 flex items-center justify-between">
-              <span>{error}</span>
-            </div>
-          )}
+      {currentView === 'home' ? (
+        <HomePage
+          onLaunchWorkspace={handleLaunchWorkspace}
+          onStartNewSession={handleStartNewSession}
+          onOpenHistory={() => setIsSidebarOpen(true)}
+          onSelectSession={handleSelectSessionFromHistory}
+        />
+      ) : (
+        <div ref={containerRef} className="flex flex-col md:flex-row flex-1 overflow-hidden relative">
+          <main
+            className="flex flex-col bg-slate-950/40 relative overflow-hidden h-full"
+            style={{ width: window.innerWidth >= 768 ? `${leftWidth}%` : '100%' }}
+          >
+            {error && (
+              <div className="bg-red-950/80 border-b border-red-500/30 px-4 py-2 text-xs text-red-300 flex items-center justify-between">
+                <span>{error}</span>
+              </div>
+            )}
 
-          <ChatContainer
-            messages={messages}
-            isLoading={isLoading}
-            onActionClick={(actionPrompt) => sendMessage(actionPrompt)}
-          />
+            <ChatContainer
+              messages={messages}
+              isLoading={isLoading}
+              onActionClick={(actionPrompt) => sendMessage(actionPrompt)}
+            />
 
-          <ChatInput
-            onSend={sendMessage}
-            isLoading={isLoading}
-            hasProblemContext={Boolean(sessionContext?.problem)}
-          />
-        </main>
+            <ChatInput
+              onSend={sendMessage}
+              isLoading={isLoading}
+              hasProblemContext={Boolean(sessionContext?.problem)}
+            />
+          </main>
 
-        <div
-          onMouseDown={() => setIsDragging(true)}
-          className={`hidden md:flex items-center justify-center w-1.5 hover:w-2 bg-slate-850 hover:bg-cyan-500/50 cursor-col-resize transition-all shrink-0 select-none z-20 group ${
-            isDragging ? 'bg-cyan-500 w-2 ring-2 ring-cyan-500/30' : ''
-          }`}
-          title="Drag to resize panels"
-        >
-          <div className="w-0.5 h-8 rounded-full bg-slate-600 group-hover:bg-cyan-300 transition-colors" />
+          <div
+            onMouseDown={() => setIsDragging(true)}
+            className={`hidden md:flex items-center justify-center w-1.5 hover:w-2 bg-slate-850 hover:bg-cyan-500/50 cursor-col-resize transition-all shrink-0 select-none z-20 group ${
+              isDragging ? 'bg-cyan-500 w-2 ring-2 ring-cyan-500/30' : ''
+            }`}
+            title="Drag to resize panels"
+          >
+            <div className="w-0.5 h-8 rounded-full bg-slate-600 group-hover:bg-cyan-300 transition-colors" />
+          </div>
+
+          <div
+            className="flex flex-col h-full overflow-hidden shrink-0"
+            style={{ width: window.innerWidth >= 768 ? `${100 - leftWidth}%` : '100%' }}
+          >
+            <WorkspacePanel
+              sessionContext={sessionContext}
+              onSaveContext={saveProblemContext}
+              isLoading={isLoading}
+            />
+          </div>
         </div>
-
-        <div
-          className="flex flex-col h-full overflow-hidden shrink-0"
-          style={{ width: window.innerWidth >= 768 ? `${100 - leftWidth}%` : '100%' }}
-        >
-          <WorkspacePanel
-            sessionContext={sessionContext}
-            onSaveContext={saveProblemContext}
-            isLoading={isLoading}
-          />
-        </div>
-      </div>
+      )}
 
       <SessionSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         currentSessionId={sessionId}
-        onSelectSession={loadSession}
+        onSelectSession={handleSelectSessionFromHistory}
       />
+      <GoogleAuthModal />
     </div>
   );
 };

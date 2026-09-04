@@ -3,8 +3,8 @@ Sessions Router for CodeMentor AI.
 Handles session creation, context updates, history retrieval, and session listing.
 """
 import logging
-from typing import List, Dict, Any
-from fastapi import APIRouter, HTTPException, Path
+from typing import List, Dict, Any, Optional
+from fastapi import APIRouter, HTTPException, Path, Depends
 
 from backend.agents.schemas import (
     DSASessionContext,
@@ -18,25 +18,35 @@ from backend.services.session import get_session_service
 from backend.services.conversation import get_conversation_service
 from backend.agents.planner import get_planner
 
+from backend.services.auth import get_current_user_optional
+from fastapi import Depends
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 
 @router.post("", response_model=DSASessionContext, summary="Create a new DSA session")
-async def create_session(request: SessionCreateRequest = SessionCreateRequest()):
+async def create_session(
+    request: SessionCreateRequest = SessionCreateRequest(),
+    current_user: Optional[dict] = Depends(get_current_user_optional),
+):
     session_service = get_session_service()
+    user_id = current_user["user_id"] if current_user else (request.user_id or "default_user")
     session = session_service.create_session(
-        user_id=request.user_id or "default_user",
+        user_id=user_id,
         initial_context=request.initial_context,
     )
     return session
 
 
 @router.get("", response_model=List[SessionSummary], summary="List active DSA sessions")
-async def list_sessions():
+async def list_sessions(
+    current_user: Optional[dict] = Depends(get_current_user_optional),
+):
     session_service = get_session_service()
-    return session_service.list_sessions()
+    user_id = current_user.get("user_id") if current_user else None
+    return session_service.list_sessions(user_id=user_id)
 
 
 @router.get("/{session_id}", response_model=DSASessionContext, summary="Get DSA session and context")

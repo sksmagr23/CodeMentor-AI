@@ -1,11 +1,12 @@
 # CodeMentor AI
 
-> **An interactive, conversational Data Structures & Algorithms (DSA) mentor with dynamic Generative UI, visual dry-run illustrations, Monaco code editor, and persistent session memory.**
+> **An interactive, conversational DSA mentor with dynamic Generative UI, visual dry-run illustrations, Monaco code editor, and persistent user session memory in MongoDB.**
 
-- **Conversational & Non-Intrusive**: Chat naturally in real time. The chat workspace is persistent, responsive, and renders rich GitHub-flavored markdown, HTML formatting, and syntax-highlighted code blocks.
-- **Dual-Pane Interactive Workspace**: 
+- **Google Authentication**: Complete user authentication flow powered by FastAPI, MongoDB `users` collection, and signed JWT Bearer tokens with route protection.
+- **Dual-Pane Resizable Workspace**: 
   - **Left Pane**: Main conversational chat stream with interactive Generative UI cards, dynamic next action chips, and rich markdown.
-  - **Right Pane**: Active DSA Context Preview Panel featuring an in-place Monaco editor, live language switcher, and multiple test cases manager.
+  - **Right Pane**: Active DSA Context Preview Panel featuring an in-place Monaco editor, live language switcher, multiple test cases manager, and full-screen dark foreground popup modals.
+  - **Draggable Split Slider**: Adjust the pane ratio freely between 25% and 75% width.
 - **Generative Visual UI**: Instead of raw text or messy JSON dumps, CodeMentor dynamically plans and renders rich visual cards directly in the chat stream: interactive bug breakdowns, side-by-side complexity matrices, failing counterexamples, and illustrated dry-run diagrams.
 - **Monaco Code Editor Integration**: Full-featured Monaco code editor for viewing snippets, debugging fixes, optimal implementations, and editing solution code directly in-place.
 - **Conceptual & Language-Agnostic**: Does not rely on rigid compilers. It evaluates the pure algorithmic logic of your code across C++, Python, Java, JavaScript/TypeScript, Go, or Rust.
@@ -39,45 +40,22 @@
 - Step-by-step trace showing array indices, pointer updates, hash map states, and recursion tree progress.
 - Includes a full-screen **Lightbox Modal** with download capabilities for offline study.
 
-### 5. Monaco Code Editor Integration
+### 5. Monaco Code Editor & Resizable Split-Pane
 - Embedded **Monaco Code Editor** with dark mode theme (`vs-dark`):
   - Syntax highlighting for C++, Python, Java, JavaScript, TypeScript, Go, and Rust.
   - Dual modes: read-only formatted viewing with line numbers + interactive in-place editing.
-  - One-click **Copy Code** button.
+  - Full-screen dark foreground popup modal with `Maximize2` button and ESC key listener.
+  - Smooth vertical resizer slider to adjust column widths on desktop.
 
 ### 6. In-Place Context Editor & Multiple Test Cases
 - Click **"Edit"** in the right preview panel to edit problem statements, solution code, or test cases **directly inside the panel without sending chat messages**.
 - Add, update, and manage multiple test cases per problem (`+ Add Test Case`, delete, copy).
 - Flexible input rules: provide only a problem statement, only code, or both.
 
-### 7. Multi-Problem Discussion in One Session
-- Discuss multiple problems back-to-back in the same conversation thread.
-- When you introduce a new problem (e.g. *"Now let's solve Longest Substring Without Repeating Characters"*), CodeMentor automatically detects the new problem, updates the MongoDB context in-place, and refreshes the preview panel seamlessly.
-
-### 9. 🗄️ Multi-Session History Management
-- All sessions are automatically persisted in MongoDB (`dsa_sessions` and `conversation_history`).
+### 7. User-Isolated Multi-Session History in MongoDB
+- Every session and chat message is linked to the authenticated user's `user_id` and saved in MongoDB (`users`, `dsa_sessions`, and `conversation_history`).
 - Open the **Session History Drawer** to switch between past problems, review prior chats, or delete older sessions.
 - Browser `localStorage` recovery ensures active session persistence on page refreshes.
-
----
-
-### BenchMarks
-
-1. **Non-Compiler Conceptual Evaluation**:
-   No heavy compiler sandboxes or execution containers. CodeMentor evaluates conceptual algorithm semantics, avoiding platform discrepancies and supporting instant reasoning across any language.
-
-2. **Controlled Generative UI**:
-   The LLM never emits raw executable JSX. Instead, the backend enforces validated Pydantic schemas, and the frontend safely maps each structured payload to a registered React component:
-   - `problem_setup_form` $\rightarrow$ Interactive setup form (optional fields & multi-test cases)
-   - `problem_summary` $\rightarrow$ Problem statement, pattern, constraints breakdown
-   - `approach_card` $\rightarrow$ Algorithmic logic, data structures, complexity badges
-   - `bug_analysis_card` $\rightarrow$ Failure cause, failing condition, Monaco fix snippet
-   - `counterexample_card` $\rightarrow$ Failing input, actual vs. expected output
-   - `dry_run_image` $\rightarrow$ Step trace + visual diagram with lightbox modal
-   - `optimization_card` $\rightarrow$ Optimal approach & Monaco code viewer
-   - `solution_comparison_card` $\rightarrow$ Side-by-side trade-off matrix
-   - `code_viewer` $\rightarrow$ Formatted snippet with Monaco editor & copy
-   - `complexity_card` $\rightarrow$ Code complexity derivation & bottleneck breakdown
 
 ---
 
@@ -90,6 +68,24 @@
 | **Database** | **MongoDB** |
 | **Data Validation** | **Pydantic** |
 | **Frontend** | **React (Vite)**, **TypeScript**, **Tailwind CSS** |
+
+---
+
+## API Architecture
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/auth/google` | Sign in or register with Google; returns JWT token & user record |
+| `GET` | `/api/auth/me` | Fetch authenticated user profile from MongoDB |
+| `POST` | `/api/auth/logout` | Logout user |
+| `POST` | `/api/sessions` | Create a new DSA session for authenticated user |
+| `GET` | `/api/sessions` | List active sessions belonging to the authenticated user |
+| `GET` | `/api/sessions/{id}` | Get session details and active context |
+| `POST` | `/api/sessions/{id}/context` | Save/update problem, solution code, and test cases |
+| `GET` | `/api/sessions/{id}/messages` | Retrieve conversation history for a session |
+| `DELETE` | `/api/sessions/{id}` | Delete a session and its message logs |
+| `POST` | `/api/query` | Send natural language prompt to CodeMentor AI agent |
+| `GET` | `/api/health` | Backend and database health status |
 
 ---
 
@@ -124,9 +120,10 @@ pip install -r backend/requirements.txt
 
 Create or verify `backend/.env`:
 ```env
-GEMINI_API_KEY=
-MONGODB_URL=
-DATABASE_NAME=
+GEMINI_API_KEY=your_gemini_api_key_
+MONGODB_URL=mongodb://localhost:27017
+DB_NAME=codementor_db
+JWT_SECRET=your_jwt_secret_key
 ```
 
 Start the FastAPI backend server:
