@@ -14,13 +14,6 @@ export interface User {
   provider: 'google';
 }
 
-interface GoogleLoginCredentials {
-  email: string;
-  name?: string;
-  avatarUrl?: string;
-  googleId?: string;
-}
-
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -28,7 +21,7 @@ interface AuthContextType {
   isAuthModalOpen: boolean;
   openAuthModal: () => void;
   closeAuthModal: () => void;
-  loginWithGoogle: (credentials: GoogleLoginCredentials) => Promise<void>;
+  loginWithGoogleCredential: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -87,16 +80,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const openAuthModal = () => setIsAuthModalOpen(true);
   const closeAuthModal = () => setIsAuthModalOpen(false);
 
-  const loginWithGoogle = async (credentials: GoogleLoginCredentials) => {
-    if (!credentials.email.trim()) {
-      throw new Error('Email is required for Google authentication');
+  const loginWithGoogleCredential = async (credential: string) => {
+    if (!credential || !credential.trim()) {
+      throw new Error('Valid Google OAuth credential token is required');
     }
 
     const res = await loginWithGoogleApi({
-      email: credentials.email.trim(),
-      name: credentials.name?.trim() || credentials.email.split('@')[0],
-      avatar_url: credentials.avatarUrl,
-      google_id: credentials.googleId,
+      credential: credential.trim(),
     });
 
     const loggedInUser: User = {
@@ -132,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthModalOpen,
         openAuthModal,
         closeAuthModal,
-        loginWithGoogle,
+        loginWithGoogleCredential,
         logout,
       }}
     >

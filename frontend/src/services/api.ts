@@ -27,12 +27,9 @@ function getAuthHeaders(): HeadersInit {
 }
 
 // AUTH API
-
+ 
 export interface GoogleLoginPayload {
-  email: string;
-  name: string;
-  avatar_url?: string;
-  google_id?: string;
+  credential: string;
 }
 
 export interface AuthApiResponse {

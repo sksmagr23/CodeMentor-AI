@@ -19,10 +19,7 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
 class GoogleLoginRequest(BaseModel):
-    email: str = Field(..., description="Google account email")
-    name: str = Field(..., description="User's full name")
-    avatar_url: Optional[str] = Field(None, description="User avatar image URL")
-    google_id: Optional[str] = Field(None, description="Google OAuth user ID or sub")
+    credential: str = Field(..., description="Google OAuth ID Token from Google Identity Services")
 
 
 class UserProfileResponse(BaseModel):
@@ -39,24 +36,33 @@ class AuthResponse(BaseModel):
     user: UserProfileResponse
 
 
-@router.post("/google", response_model=AuthResponse, summary="Sign in or register with Google")
+@router.post("/google", response_model=AuthResponse, summary="Sign in with Google OAuth")
 async def google_login(request: GoogleLoginRequest):
     """
-    Authenticate with Google. Finds existing user or creates a new user in MongoDB,
-    and returns a signed JWT bearer token.
+    Authenticate exclusively with Google OAuth.
+    Cryptographically verifies the Google ID Token credential with Google Identity Services,
+    stores/updates the verified user in MongoDB, and issues a signed JWT session token.
     """
-    if not request.email or "@" not in request.email:
+    auth_service = get_auth_service()
+
+    if not request.credential or not request.credential.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A valid Google email address is required.",
+            detail="Google OAuth credential token is required.",
         )
 
-    auth_service = get_auth_service()
+    verified_data = auth_service.verify_google_credential(request.credential.strip())
+    if not verified_data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired Google OAuth credential.",
+        )
+
     user_doc = auth_service.get_or_create_google_user(
-        email=request.email,
-        name=request.name or request.email.split("@")[0],
-        avatar_url=request.avatar_url,
-        google_id=request.google_id,
+        email=verified_data["email"],
+        name=verified_data["name"],
+        avatar_url=verified_data["avatar_url"],
+        google_id=verified_data.get("google_id"),
     )
 
     user_id = user_doc["user_id"]

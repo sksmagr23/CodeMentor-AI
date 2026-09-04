@@ -129,6 +129,8 @@ CodeMentor AI is an interactive learning and debugging platform designed to help
    MONGODB_URL=mongodb://localhost:27017
    DB_NAME=codementor_db
    JWT_SECRET=your_jwt_secret_key
+   GOOGLE_CLIENT_ID=your_google_oauth_client_id
+   GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
    ```
 
 4. Start the backend server:
@@ -149,6 +151,7 @@ CodeMentor AI is an interactive learning and debugging platform designed to help
 2. Create a `frontend/.env` file:
    ```env
    VITE_API_URL=http://localhost:8000/api
+   VITE_GOOGLE_CLIENT_ID=your_google_oauth_client_id
    ```
 
 3. Start the application:
