@@ -35,13 +35,21 @@ class AuthService:
         self._ensure_indexes()
 
     def _ensure_indexes(self):
-        """Create necessary indexes on MongoDB 'users' collection."""
+        """Create necessary indexes on MongoDB 'users' collection if they don't already exist."""
         try:
-            self.db.users.create_index("email", unique=True, sparse=True)
-            self.db.users.create_index("google_id", sparse=True)
-            self.db.users.create_index("user_id", unique=True)
+            existing = self.db.users.index_information()
+            existing_keys = {tuple(info.get("key", [])) for info in existing.values()}
+
+            if (("email", 1),) not in existing_keys:
+                self.db.users.create_index("email", unique=True)
+
+            if (("google_id", 1),) not in existing_keys:
+                self.db.users.create_index("google_id", sparse=True)
+
+            if (("user_id", 1),) not in existing_keys:
+                self.db.users.create_index("user_id", unique=True)
         except Exception as e:
-            logger.warning(f"[AuthService] Index creation note: {e}")
+            logger.debug(f"[AuthService] Index setup note: {e}")
 
     def verify_google_credential(self, credential: str) -> Optional[Dict[str, Any]]:
         """
