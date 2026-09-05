@@ -17,12 +17,14 @@ interface RegistryHandlers {
 }
 
 const UnsupportedCard: React.FC<{ type: string; data: any }> = ({ type, data }) => (
-  <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 my-3 text-slate-400 text-xs">
-    <div className="flex items-center gap-2 text-amber-400 font-medium mb-1">
-      <AlertTriangle className="w-4 h-4" />
+  <div className="panel-brutal p-4 my-3 text-ink text-xs">
+    <div className="flex items-center gap-2 text-warn font-medium mb-1">
+      <div className="border-2 border-accent bg-accent-soft text-warn p-1.5 shadow-hard-sm">
+        <AlertTriangle className="w-4 h-4" />
+      </div>
       <span>Structured Output: {type}</span>
     </div>
-    <pre className="mt-2 p-2 rounded bg-slate-950 text-slate-300 font-['JetBrains_Mono'] overflow-x-auto">
+    <pre className="mt-2 p-2 border-2 border-accent bg-paper text-ink font-mono overflow-x-auto shadow-hard-sm">
       <code>{JSON.stringify(data, null, 2)}</code>
     </pre>
   </div>

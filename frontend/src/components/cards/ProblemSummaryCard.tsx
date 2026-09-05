@@ -15,55 +15,55 @@ export const ProblemSummaryCard: React.FC<ProblemSummaryData> = ({
   expected_complexity,
 }) => {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-5 shadow-lg my-3 text-slate-200">
-      <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
+    <div className="panel-brutal p-5 my-3 text-ink">
+      <div className="flex items-center justify-between border-b-2 border-accent pb-3 mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+          <div className="border-2 border-accent bg-accent-soft text-accent-bright p-2 shadow-hard-sm">
             <BookOpen className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-['Space_Grotesk'] text-base font-semibold text-slate-100">{renderSafeText(title)}</h3>
-            <span className="text-xs font-['JetBrains_Mono'] text-cyan-400">{renderSafeText(pattern)}</span>
+            <h3 className="font-display text-lg text-ink">{renderSafeText(title)}</h3>
+            <span className="text-xs font-mono text-accent-bright">{renderSafeText(pattern)}</span>
           </div>
         </div>
         {expected_complexity && (
-          <span className="px-2.5 py-1 text-xs font-['JetBrains_Mono'] rounded-full bg-slate-800 text-emerald-400 border border-emerald-500/30">
+          <span className="border-2 border-accent px-2 py-1 text-xs font-medium font-mono bg-accent-soft text-accent-bright">
             {renderSafeText(expected_complexity)}
           </span>
         )}
       </div>
 
-      <p className="text-sm text-slate-300 mb-4 leading-relaxed">{renderSafeText(statement)}</p>
+      <p className="text-sm text-ink mb-4 leading-relaxed">{renderSafeText(statement)}</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs mb-4">
-        <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800">
-          <div className="flex items-center gap-1.5 font-medium text-slate-400 mb-1">
-            <Target className="w-3.5 h-3.5 text-cyan-400" />
+        <div className="p-3 border-2 border-accent bg-paper shadow-hard-sm">
+          <div className="flex items-center gap-1.5 font-medium text-muted mb-1">
+            <Target className="w-3.5 h-3.5 text-accent-bright" />
             <span>Objective</span>
           </div>
-          <p className="text-slate-200">{renderSafeText(objective)}</p>
+          <p className="text-ink">{renderSafeText(objective)}</p>
           {inputs && inputs.length > 0 && (
-            <div className="mt-2 text-[11px] text-slate-400 font-['JetBrains_Mono']">
+            <div className="mt-2 text-[11px] text-muted font-mono">
               Inputs: {inputs.map(renderSafeText).join(', ')}
             </div>
           )}
         </div>
 
-        <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800">
-          <div className="flex items-center gap-1.5 font-medium text-slate-400 mb-1">
-            <Layers className="w-3.5 h-3.5 text-indigo-400" />
+        <div className="p-3 border-2 border-accent bg-paper shadow-hard-sm">
+          <div className="flex items-center gap-1.5 font-medium text-muted mb-1">
+            <Layers className="w-3.5 h-3.5 text-accent-bright" />
             <span>Expected Output</span>
           </div>
-          <p className="text-slate-200 font-['JetBrains_Mono']">{renderSafeText(outputs)}</p>
+          <p className="text-ink font-mono">{renderSafeText(outputs)}</p>
         </div>
       </div>
 
       {constraints && constraints.length > 0 && (
         <div className="mb-3">
-          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Constraints</h4>
+          <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Constraints</h4>
           <div className="flex flex-wrap gap-1.5">
             {constraints.map((c, i) => (
-              <span key={i} className="px-2 py-0.5 text-xs font-['JetBrains_Mono'] rounded bg-slate-800/80 text-slate-300 border border-slate-700">
+              <span key={i} className="border-2 border-accent px-2 py-1 text-xs font-medium font-mono bg-paper-elevated text-ink">
                 {renderSafeText(c)}
               </span>
             ))}
@@ -73,13 +73,13 @@ export const ProblemSummaryCard: React.FC<ProblemSummaryData> = ({
 
       {edge_cases && edge_cases.length > 0 && (
         <div>
-          <div className="flex items-center gap-1 text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">
+          <div className="flex items-center gap-1 text-xs font-semibold text-warn uppercase tracking-wider mb-2">
             <AlertCircle className="w-3.5 h-3.5" />
             <span>Critical Edge Cases</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {edge_cases.map((ec, i) => (
-              <span key={i} className="px-2 py-0.5 text-xs rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+              <span key={i} className="border-2 border-accent px-2 py-1 text-xs font-medium bg-paper text-warn">
                 {renderSafeText(ec)}
               </span>
             ))}

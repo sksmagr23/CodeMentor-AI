@@ -19,31 +19,31 @@ export const ApproachCard: React.FC<ApproachCardData> = ({
     switch (correctness_classification) {
       case 'correct_and_optimal':
         return (
-          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+          <span className="flex items-center gap-1 border-2 border-accent px-2 py-1 text-xs font-medium bg-accent-soft text-success">
             <CheckCircle2 className="w-3.5 h-3.5" /> Correct & Optimal
           </span>
         );
       case 'correct_but_suboptimal':
         return (
-          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
+          <span className="flex items-center gap-1 border-2 border-accent px-2 py-1 text-xs font-medium bg-paper text-warn">
             <AlertTriangle className="w-3.5 h-3.5" /> Correct but Suboptimal
           </span>
         );
       case 'correct_idea_buggy_implementation':
         return (
-          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/30">
+          <span className="flex items-center gap-1 border-2 border-accent px-2 py-1 text-xs font-medium bg-paper text-warn">
             <AlertTriangle className="w-3.5 h-3.5" /> Right Idea, Buggy Implementation
           </span>
         );
       case 'incorrect_approach':
         return (
-          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30">
+          <span className="flex items-center gap-1 border-2 border-accent px-2 py-1 text-xs font-medium bg-paper text-danger">
             <XCircle className="w-3.5 h-3.5" /> Incorrect Approach
           </span>
         );
       default:
         return (
-          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+          <span className="flex items-center gap-1 border-2 border-accent px-2 py-1 text-xs font-medium bg-paper-elevated text-muted">
             <HelpCircle className="w-3.5 h-3.5" /> Conceptual Analysis
           </span>
         );
@@ -51,17 +51,17 @@ export const ApproachCard: React.FC<ApproachCardData> = ({
   };
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-5 shadow-lg my-3 text-slate-200">
-      <div className="flex flex-wrap items-center justify-between border-b border-slate-800/80 pb-3 mb-4 gap-2">
+    <div className="panel-brutal p-5 my-3 text-ink">
+      <div className="flex flex-wrap items-center justify-between border-b-2 border-accent pb-3 mb-4 gap-2">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <div className="border-2 border-accent bg-accent-soft text-accent-bright p-2 shadow-hard-sm">
             <Cpu className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-['Space_Grotesk'] text-base font-semibold text-slate-100">{renderSafeText(algorithm)}</h3>
-            <div className="flex items-center gap-1.5 mt-0.5">
+            <h3 className="font-display text-lg text-ink">{renderSafeText(algorithm)}</h3>
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
               {data_structures?.map((ds, i) => (
-                <span key={i} className="text-xs font-['JetBrains_Mono'] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                <span key={i} className="text-xs font-mono border-2 border-accent px-2 py-1 font-medium bg-paper text-ink">
                   {renderSafeText(ds)}
                 </span>
               ))}
@@ -72,46 +72,46 @@ export const ApproachCard: React.FC<ApproachCardData> = ({
       </div>
 
       <div className="mb-4">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Algorithmic Logic</h4>
-        <p className="text-sm text-slate-300 leading-relaxed bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
+        <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5">Algorithmic Logic</h4>
+        <p className="text-sm text-ink leading-relaxed bg-paper p-3 border-2 border-accent shadow-hard-sm">
           {renderSafeText(logic)}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-4 font-['JetBrains_Mono']">
-        <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
+      <div className="grid grid-cols-2 gap-3 mb-4 font-mono">
+        <div className="p-3 border-2 border-accent bg-paper shadow-hard-sm">
+          <div className="flex items-center gap-1.5 text-xs text-muted mb-1">
+            <Clock className="w-3.5 h-3.5 text-warn" />
             <span>Time Complexity</span>
           </div>
-          <div className="text-base font-semibold text-amber-300">{renderSafeText(time_complexity)}</div>
+          <div className="text-base font-semibold text-warn">{renderSafeText(time_complexity)}</div>
           {time_complexity_reasoning && (
-            <div className="text-xs text-slate-400 mt-1 font-sans">{renderSafeText(time_complexity_reasoning)}</div>
+            <div className="text-xs text-muted mt-1 font-sans">{renderSafeText(time_complexity_reasoning)}</div>
           )}
         </div>
 
-        <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-            <HardDrive className="w-3.5 h-3.5 text-cyan-400" />
+        <div className="p-3 border-2 border-accent bg-paper shadow-hard-sm">
+          <div className="flex items-center gap-1.5 text-xs text-muted mb-1">
+            <HardDrive className="w-3.5 h-3.5 text-accent-bright" />
             <span>Space Complexity</span>
           </div>
-          <div className="text-base font-semibold text-cyan-300">{renderSafeText(space_complexity)}</div>
+          <div className="text-base font-semibold text-accent-bright">{renderSafeText(space_complexity)}</div>
           {space_complexity_reasoning && (
-            <div className="text-xs text-slate-400 mt-1 font-sans">{renderSafeText(space_complexity_reasoning)}</div>
+            <div className="text-xs text-muted mt-1 font-sans">{renderSafeText(space_complexity_reasoning)}</div>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
         {strengths && strengths.length > 0 && (
-          <div className="p-3 rounded-lg bg-emerald-950/20 border border-emerald-500/20">
-            <div className="font-semibold text-emerald-400 mb-1.5 flex items-center gap-1">
+          <div className="p-3 border-2 border-accent bg-paper-elevated shadow-hard-sm">
+            <div className="font-semibold text-success mb-1.5 flex items-center gap-1">
               <Check className="w-3.5 h-3.5" /> Strengths
             </div>
-            <ul className="space-y-1 text-slate-300">
+            <ul className="space-y-1 text-ink">
               {strengths.map((s, i) => (
                 <li key={i} className="flex items-start gap-1.5">
-                  <span className="text-emerald-500">•</span>
+                  <span className="text-success">•</span>
                   <span>{renderSafeText(s)}</span>
                 </li>
               ))}
@@ -120,14 +120,14 @@ export const ApproachCard: React.FC<ApproachCardData> = ({
         )}
 
         {weaknesses && weaknesses.length > 0 && (
-          <div className="p-3 rounded-lg bg-red-950/20 border border-red-500/20">
-            <div className="font-semibold text-red-400 mb-1.5 flex items-center gap-1">
+          <div className="p-3 border-2 border-accent bg-paper-elevated shadow-hard-sm">
+            <div className="font-semibold text-danger mb-1.5 flex items-center gap-1">
               <AlertTriangle className="w-3.5 h-3.5" /> Limitations / Weaknesses
             </div>
-            <ul className="space-y-1 text-slate-300">
+            <ul className="space-y-1 text-ink">
               {weaknesses.map((w, i) => (
                 <li key={i} className="flex items-start gap-1.5">
-                  <span className="text-red-400">•</span>
+                  <span className="text-danger">•</span>
                   <span>{renderSafeText(w)}</span>
                 </li>
               ))}

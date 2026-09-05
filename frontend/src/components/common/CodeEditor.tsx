@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { Copy, Check, Code2, Maximize2, X } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
 
 interface CodeEditorProps {
   value: string;
@@ -38,6 +39,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   className = '',
   allowFullscreen = true,
 }) => {
+  const toast = useToast();
   const [copied, setCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -46,6 +48,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const handleCopy = () => {
     navigator.clipboard.writeText(value);
     setCopied(true);
+    toast.success('Copied', 'Code copied to clipboard.');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -59,18 +62,32 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
+  const editorOptions = {
+    readOnly,
+    domReadOnly: readOnly,
+    minimap: { enabled: false as const },
+    fontSize: 12,
+    fontFamily: "'IBM Plex Mono', monospace",
+    lineNumbers: 'on' as const,
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    padding: { top: 8, bottom: 8 },
+    overviewRulerBorder: false,
+    renderLineHighlight: (readOnly ? 'none' : 'line') as 'none' | 'line',
+    contextmenu: !readOnly,
+    tabSize: 4,
+  };
+
   return (
     <>
-      <div
-        className={`rounded-xl border border-slate-800 bg-slate-950 overflow-hidden shadow-lg flex flex-col ${className}`}
-      >
-        <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900/90 border-b border-slate-800 text-xs select-none">
+      <div className={`border-2 border-accent bg-paper-elevated overflow-hidden shadow-hard flex flex-col ${className}`}>
+        <div className="flex items-center justify-between px-3 py-1.5 bg-paper border-b-2 border-accent text-xs select-none">
           <div className="flex items-center gap-2">
-            <Code2 className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="font-['JetBrains_Mono'] font-medium text-slate-300">
+            <Code2 className="w-3.5 h-3.5 text-accent-bright" strokeWidth={2.25} />
+            <span className="font-mono font-medium text-ink">
               {title || `Code (${monacoLang.toUpperCase()})`}
             </span>
-            <span className="px-1.5 py-0.2 rounded bg-slate-800 text-[10px] font-['JetBrains_Mono'] text-cyan-400 uppercase">
+            <span className="px-1.5 py-0.5 border border-accent bg-accent-soft font-mono text-[10px] text-accent-bright uppercase">
               {monacoLang}
             </span>
           </div>
@@ -79,17 +96,17 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             <button
               onClick={handleCopy}
               type="button"
-              className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded hover:bg-slate-800 transition-colors"
+              className="flex items-center gap-1 text-[11px] text-muted hover:text-ink px-2 py-0.5 border border-transparent hover:border-accent hover:bg-paper-elevated transition-colors"
               title="Copy Code"
             >
               {copied ? (
                 <>
-                  <Check className="w-3 h-3 text-emerald-400" />
-                  <span className="text-emerald-400">Copied</span>
+                  <Check className="w-3 h-3 text-success" strokeWidth={2.5} />
+                  <span className="text-success">Copied</span>
                 </>
               ) : (
                 <>
-                  <Copy className="w-3 h-3" />
+                  <Copy className="w-3 h-3" strokeWidth={2.25} />
                   <span>Copy</span>
                 </>
               )}
@@ -99,62 +116,46 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               <button
                 onClick={() => setIsFullscreen(true)}
                 type="button"
-                className="p-1 rounded text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors"
+                className="p-1 text-muted hover:text-accent-bright hover:bg-accent-soft border border-transparent hover:border-accent transition-colors"
                 title="View Fullscreen"
               >
-                <Maximize2 className="w-3.5 h-3.5" />
+                <Maximize2 className="w-3.5 h-3.5" strokeWidth={2.25} />
               </button>
             )}
           </div>
         </div>
 
-        <div className="w-full relative" style={{ height }}>
+        <div className="w-full relative border-t-0" style={{ height }}>
           <Editor
             height="100%"
             language={monacoLang}
             value={value}
             onChange={(val) => onChange && onChange(val || '')}
             theme="vs-dark"
-            options={{
-              readOnly,
-              domReadOnly: readOnly,
-              minimap: { enabled: false },
-              fontSize: 12,
-              fontFamily: "'JetBrains Mono', monospace",
-              lineNumbers: 'on',
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              padding: { top: 8, bottom: 8 },
-              overviewRulerBorder: false,
-              renderLineHighlight: readOnly ? 'none' : 'line',
-              contextmenu: !readOnly,
-              tabSize: 4,
-            }}
+            options={editorOptions}
             loading={
-              <div className="flex items-center justify-center h-full text-slate-500 text-xs font-['JetBrains_Mono']">
-                Loading editor...
+              <div className="flex items-center justify-center h-full text-muted text-xs font-mono">
+                Loading editor…
               </div>
             }
           />
         </div>
       </div>
 
-      {/* FULLSCREEN POPUP MODAL */}
       {isFullscreen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/85 backdrop-blur-md animate-fadeIn">
-          <div className="w-full max-w-6xl h-[88vh] flex flex-col rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 select-none">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-ink/50 animate-fade-in">
+          <div className="w-full max-w-6xl h-[88vh] flex flex-col border-2 border-accent bg-paper-elevated shadow-hard-lg overflow-hidden animate-pop-in">
+            <div className="flex items-center justify-between px-4 py-3 bg-paper border-b-2 border-accent select-none">
               <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                  <Code2 className="w-4 h-4" />
+                <div className="p-1.5 border-2 border-accent bg-accent-soft text-accent-bright">
+                  <Code2 className="w-4 h-4" strokeWidth={2.25} />
                 </div>
                 <div>
-                  <h3 className="font-['Space_Grotesk'] text-sm font-semibold text-slate-100">
+                  <h3 className="font-display text-lg text-ink">
                     {title || 'Full Code View'}
                   </h3>
-                  <span className="text-[11px] font-['JetBrains_Mono'] text-cyan-400 uppercase">
-                    {monacoLang} {readOnly ? '• Read-Only' : '• Editable'}
+                  <span className="text-[11px] font-mono text-accent-bright uppercase">
+                    {monacoLang} {readOnly ? '· Read-Only' : '· Editable'}
                   </span>
                 </div>
               </div>
@@ -163,16 +164,16 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 <button
                   onClick={handleCopy}
                   type="button"
-                  className="flex items-center gap-1.5 px-3 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+                  className="btn-brutal btn-brutal-white flex items-center gap-1.5 px-3 py-1 text-xs"
                 >
                   {copied ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-emerald-400 font-medium">Copied</span>
+                      <Check className="w-3.5 h-3.5 text-success" strokeWidth={2.5} />
+                      <span className="text-success font-medium">Copied</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-3.5 h-3.5" />
+                      <Copy className="w-3.5 h-3.5" strokeWidth={2.25} />
                       <span>Copy Code</span>
                     </>
                   )}
@@ -180,16 +181,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 <button
                   onClick={() => setIsFullscreen(false)}
                   type="button"
-                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-100 transition-colors border border-slate-700"
+                  className="icon-btn w-8 h-8"
                   title="Close (Esc)"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4" strokeWidth={2.5} />
                 </button>
               </div>
             </div>
 
-            {/* Modal Editor Body */}
-            <div className="flex-1 w-full relative bg-slate-950">
+            <div className="flex-1 w-full relative bg-paper-elevated">
               <Editor
                 height="100%"
                 language={monacoLang}
@@ -197,19 +197,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 onChange={(val) => onChange && onChange(val || '')}
                 theme="vs-dark"
                 options={{
-                  readOnly,
-                  domReadOnly: readOnly,
+                  ...editorOptions,
                   minimap: { enabled: true },
                   fontSize: 13,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  lineNumbers: 'on',
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
                   padding: { top: 12, bottom: 12 },
-                  overviewRulerBorder: false,
-                  renderLineHighlight: readOnly ? 'none' : 'line',
-                  contextmenu: !readOnly,
-                  tabSize: 4,
                 }}
               />
             </div>

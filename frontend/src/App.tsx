@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './context/AuthContext';
+import { useToast } from './context/ToastContext';
 import { useChatSession } from './hooks/useChatSession';
 import { Header } from './components/workspace/Header';
 import { WorkspacePanel } from './components/workspace/WorkspacePanel';
@@ -11,6 +12,7 @@ import { GoogleAuthModal } from './components/auth/GoogleAuthModal';
 
 export const App: React.FC = () => {
   const { isAuthenticated, openAuthModal } = useAuth();
+  const toast = useToast();
   const {
     sessionId,
     sessionContext,
@@ -24,6 +26,7 @@ export const App: React.FC = () => {
   } = useChatSession();
 
   const [currentView, setCurrentView] = useState<'home' | 'workspace'>('home');
+  const [viewKey, setViewKey] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [leftWidth, setLeftWidth] = useState<number>(() => {
@@ -33,12 +36,17 @@ export const App: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const switchView = (view: 'home' | 'workspace') => {
+    setCurrentView(view);
+    setViewKey((k) => k + 1);
+  };
+
   const handleNavigate = (view: 'home' | 'workspace') => {
     if (view === 'workspace' && !isAuthenticated) {
       openAuthModal();
       return;
     }
-    setCurrentView(view);
+    switchView(view);
   };
 
   const handleLaunchWorkspace = () => {
@@ -46,7 +54,8 @@ export const App: React.FC = () => {
       openAuthModal();
       return;
     }
-    setCurrentView('workspace');
+    switchView('workspace');
+    toast.info('Workspace ready', 'Drop a problem on the right and start chatting.');
   };
 
   const handleStartNewSession = async () => {
@@ -55,14 +64,23 @@ export const App: React.FC = () => {
       return;
     }
     await startNewSession();
-    setCurrentView('workspace');
+    switchView('workspace');
+    toast.success('New session', 'Fresh context — paste a problem to begin.');
   };
 
   const handleSelectSessionFromHistory = (sid: string) => {
     loadSession(sid);
     setIsSidebarOpen(false);
-    setCurrentView('workspace');
+    switchView('workspace');
+    toast.info('Session restored', 'Picking up where you left off.');
   };
+
+  useEffect(() => {
+    if (error) {
+      toast.error('Something went wrong', error);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -75,9 +93,7 @@ export const App: React.FC = () => {
     };
 
     const handleMouseUp = () => {
-      if (isDragging) {
-        setIsDragging(false);
-      }
+      if (isDragging) setIsDragging(false);
     };
 
     if (isDragging) {
@@ -99,7 +115,7 @@ export const App: React.FC = () => {
   }, [isDragging]);
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#0B0F17] text-slate-100 font-sans overflow-hidden antialiased">
+    <div className="flex flex-col h-screen w-screen bg-graph text-ink font-sans overflow-hidden">
       <Header
         sessionId={sessionId}
         currentView={currentView}
@@ -110,20 +126,26 @@ export const App: React.FC = () => {
       />
 
       {currentView === 'home' ? (
-        <HomePage
-          onLaunchWorkspace={handleLaunchWorkspace}
-          onStartNewSession={handleStartNewSession}
-          onOpenHistory={() => setIsSidebarOpen(true)}
-          onSelectSession={handleSelectSessionFromHistory}
-        />
+        <div key={`home-${viewKey}`} className="flex-1 overflow-hidden animate-view-enter">
+          <HomePage
+            onLaunchWorkspace={handleLaunchWorkspace}
+            onStartNewSession={handleStartNewSession}
+            onOpenHistory={() => setIsSidebarOpen(true)}
+            onSelectSession={handleSelectSessionFromHistory}
+          />
+        </div>
       ) : (
-        <div ref={containerRef} className="flex flex-col md:flex-row flex-1 overflow-hidden relative">
+        <div
+          key={`ws-${viewKey}`}
+          ref={containerRef}
+          className="flex flex-col md:flex-row flex-1 overflow-hidden relative animate-view-enter"
+        >
           <main
-            className="flex flex-col bg-slate-950/40 relative overflow-hidden h-full"
+            className="flex flex-col bg-paper/80 relative overflow-hidden h-full border-r-0 md:border-r-2 border-accent"
             style={{ width: window.innerWidth >= 768 ? `${leftWidth}%` : '100%' }}
           >
             {error && (
-              <div className="bg-red-950/80 border-b border-red-500/30 px-4 py-2 text-xs text-red-300 flex items-center justify-between">
+              <div className="bg-danger text-white border-b-2 border-accent px-4 py-2 text-xs flex items-center justify-between font-medium">
                 <span>{error}</span>
               </div>
             )}
@@ -143,12 +165,12 @@ export const App: React.FC = () => {
 
           <div
             onMouseDown={() => setIsDragging(true)}
-            className={`hidden md:flex items-center justify-center w-1.5 hover:w-2 bg-slate-850 hover:bg-cyan-500/50 cursor-col-resize transition-all shrink-0 select-none z-20 group ${
-              isDragging ? 'bg-cyan-500 w-2 ring-2 ring-cyan-500/30' : ''
+            className={`hidden md:flex items-center justify-center w-2 bg-paper hover:bg-accent cursor-col-resize transition-colors shrink-0 select-none z-20 border-x-2 border-accent group ${
+              isDragging ? 'bg-accent' : ''
             }`}
             title="Drag to resize panels"
           >
-            <div className="w-0.5 h-8 rounded-full bg-slate-600 group-hover:bg-cyan-300 transition-colors" />
+            <div className={`w-0.5 h-10 bg-ink group-hover:bg-paper-elevated transition-colors ${isDragging ? 'bg-paper-elevated' : ''}`} />
           </div>
 
           <div

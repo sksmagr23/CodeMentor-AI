@@ -28,12 +28,14 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="rounded-xl border border-red-900/60 bg-red-950/20 p-4 my-3 text-red-200 text-xs">
-          <div className="flex items-center gap-2 font-semibold text-red-400 mb-1">
-            <AlertTriangle className="w-4 h-4" />
+        <div className="border-2 border-accent bg-paper-elevated shadow-hard p-4 my-3 text-ink text-xs">
+          <div className="flex items-center gap-2 font-semibold text-danger mb-1">
+            <div className="border-2 border-accent bg-accent-soft text-danger p-1.5 shadow-hard-sm">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
             <span>{this.props.fallbackTitle || 'Rendering Error in Component'}</span>
           </div>
-          <p className="text-slate-400 text-xs">
+          <p className="text-muted text-xs">
             {this.state.error?.message || 'An unexpected rendering error occurred.'}
           </p>
         </div>

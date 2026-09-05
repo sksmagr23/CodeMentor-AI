@@ -18,45 +18,45 @@ export const OptimizationCard: React.FC<OptimizationData> = ({
   const height = Math.min(Math.max(lineCount * 21 + 45, 140), 340);
 
   return (
-    <div className="rounded-xl border border-emerald-500/30 bg-slate-900/90 p-5 shadow-lg my-3 text-slate-200">
-      <div className="flex flex-wrap items-center justify-between border-b border-slate-800/80 pb-3 mb-4 gap-2">
+    <div className="panel-brutal p-5 my-3 text-ink">
+      <div className="flex flex-wrap items-center justify-between border-b-2 border-accent pb-3 mb-4 gap-2">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <div className="border-2 border-accent bg-accent-soft text-success p-2 shadow-hard-sm">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-['Space_Grotesk'] text-base font-semibold text-emerald-200">
+            <h3 className="font-display text-lg text-ink">
               Optimal Solution
             </h3>
-            <span className="text-xs font-['JetBrains_Mono'] text-emerald-400">
+            <span className="text-xs font-mono text-success">
               {renderSafeText(approach_name)}
             </span>
           </div>
         </div>
 
         {previous_complexity && (
-          <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs font-['JetBrains_Mono']">
-            <span className="text-slate-400">{renderSafeText(previous_complexity)}</span>
-            <ArrowRight className="w-3 h-3 text-emerald-400" />
-            <span className="text-emerald-300 font-bold">{renderSafeText(time_complexity)}</span>
+          <div className="flex items-center gap-2 border-2 border-accent px-2 py-1 text-xs font-medium font-mono bg-paper shadow-hard-sm">
+            <span className="text-muted">{renderSafeText(previous_complexity)}</span>
+            <ArrowRight className="w-3 h-3 text-success" />
+            <span className="text-success font-bold">{renderSafeText(time_complexity)}</span>
           </div>
         )}
       </div>
 
-      <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
+      <p className="text-xs sm:text-sm text-ink mb-4 leading-relaxed bg-paper p-3 border-2 border-accent shadow-hard-sm">
         {renderSafeText(explanation)}
       </p>
 
-      <div className="grid grid-cols-2 gap-3 mb-4 font-['JetBrains_Mono'] text-xs">
-        <div className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800">
-          <span className="text-slate-400 block mb-0.5">Optimal Time:</span>
-          <span className="text-sm font-bold text-emerald-400">
+      <div className="grid grid-cols-2 gap-3 mb-4 font-mono text-xs">
+        <div className="p-2.5 border-2 border-accent bg-paper shadow-hard-sm">
+          <span className="text-muted block mb-0.5">Optimal Time:</span>
+          <span className="text-sm font-bold text-success">
             {renderSafeText(time_complexity)}
           </span>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800">
-          <span className="text-slate-400 block mb-0.5">Optimal Space:</span>
-          <span className="text-sm font-bold text-cyan-400">
+        <div className="p-2.5 border-2 border-accent bg-paper shadow-hard-sm">
+          <span className="text-muted block mb-0.5">Optimal Space:</span>
+          <span className="text-sm font-bold text-accent-bright">
             {renderSafeText(space_complexity)}
           </span>
         </div>
@@ -75,14 +75,14 @@ export const OptimizationCard: React.FC<OptimizationData> = ({
       )}
 
       {tradeoffs && tradeoffs.length > 0 && (
-        <div className="p-3 rounded-lg bg-slate-950/50 border border-slate-800 text-xs">
-          <span className="font-semibold text-slate-400 block mb-1">
+        <div className="p-3 border-2 border-accent bg-paper-elevated shadow-hard-sm text-xs">
+          <span className="font-semibold text-muted block mb-1">
             Trade-offs & Considerations:
           </span>
-          <ul className="space-y-1 text-slate-300">
+          <ul className="space-y-1 text-ink">
             {tradeoffs.map((t, i) => (
               <li key={i} className="flex items-start gap-1">
-                <span className="text-emerald-500">•</span>
+                <span className="text-success">•</span>
                 <span>{renderSafeText(t)}</span>
               </li>
             ))}

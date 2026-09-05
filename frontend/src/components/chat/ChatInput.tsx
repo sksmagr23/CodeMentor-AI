@@ -39,76 +39,55 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
+  const chips = [
+    { label: 'Explain Approach', prompt: 'Explain my approach' },
+    { label: 'Why is it wrong?', prompt: 'Why is my solution wrong?' },
+    { label: 'Show Dry Run', prompt: 'Show me the dry run' },
+    { label: 'Show Optimal', prompt: 'Show optimal approach' },
+  ];
+
   return (
-    <div className="border-t border-slate-800 bg-slate-950/90 p-4">
+    <div className="border-t-2 border-accent bg-paper-elevated p-3 sm:p-4">
       {hasProblemContext && (
         <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-1 scrollbar-none text-[11px]">
-          <span className="text-slate-500 flex items-center gap-1 pl-1">
-            <Sparkles className="w-3 h-3 text-cyan-400" /> Ask:
+          <span className="text-muted flex items-center gap-1 pl-1 shrink-0 font-medium">
+            <Sparkles className="w-3 h-3 text-accent-bright" strokeWidth={2.25} /> Ask
           </span>
-          <button
-            type="button"
-            onClick={() => onSend("Explain my approach")}
-            disabled={isLoading}
-            className="px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 whitespace-nowrap transition-colors"
-          >
-            Explain Approach
-          </button>
-          <button
-            type="button"
-            onClick={() => onSend("Why is my solution wrong?")}
-            disabled={isLoading}
-            className="px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 whitespace-nowrap transition-colors"
-          >
-            Why is it wrong?
-          </button>
-          <button
-            type="button"
-            onClick={() => onSend("Show me the dry run")}
-            disabled={isLoading}
-            className="px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 whitespace-nowrap transition-colors"
-          >
-            Show Dry Run
-          </button>
-          <button
-            type="button"
-            onClick={() => onSend("Show optimal approach")}
-            disabled={isLoading}
-            className="px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 whitespace-nowrap transition-colors"
-          >
-            Show Optimal
-          </button>
-          <button
-            type="button"
-            onClick={() => onSend("Compare both solutions")}
-            disabled={isLoading}
-            className="px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 whitespace-nowrap transition-colors"
-          >
-            Compare Both
-          </button>
+          {chips.map((chip) => (
+            <button
+              key={chip.label}
+              type="button"
+              onClick={() => onSend(chip.prompt)}
+              disabled={isLoading}
+              className="px-2.5 py-1 border-2 border-accent bg-paper hover:bg-accent-soft text-ink whitespace-nowrap transition-colors disabled:opacity-40 shadow-hard-sm"
+            >
+              {chip.label}
+            </button>
+          ))}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="relative flex items-center">
+      <form onSubmit={handleSubmit} className="relative flex items-end gap-2">
         <textarea
           ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask anything about DSA, request analysis, or paste your solution..."
+          placeholder="Ask about DSA, request analysis, or paste your solution…"
           rows={1}
           disabled={isLoading}
-          className="w-full resize-none rounded-xl bg-slate-900 border border-slate-800 pl-4 pr-12 py-3 text-sm text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 max-h-32 transition-all font-sans leading-relaxed"
+          className="input-brutal w-full resize-none pl-4 pr-4 py-3 text-sm max-h-32 font-sans leading-relaxed"
         />
         <button
           type="submit"
           disabled={!input.trim() || isLoading}
-          className="absolute right-2.5 p-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-md"
+          className="btn-brutal btn-brutal-blue shrink-0 p-3 disabled:opacity-30"
+          aria-label="Send"
         >
           {isLoading ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white animate-spin" />
           ) : (
-            <Send className="w-4 h-4" />
+            <Send className="w-4 h-4" strokeWidth={2.5} />
           )}
         </button>
       </form>

@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import type { ChatMessage as ChatMessageType } from '../../types/dsa';
 import { ChatMessage } from './ChatMessage';
-import { Sparkles, Terminal, Code2, HelpCircle } from 'lucide-react';
+import { Sparkles, Code2, HelpCircle } from 'lucide-react';
+import { BrandLogo } from '../common/BrandLogo';
 
 interface ChatContainerProps {
   messages: ChatMessageType[];
@@ -21,43 +22,43 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   }, [messages, isLoading]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+    <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4 bg-graph-fine">
       {messages.length === 0 ? (
-        <div className="h-full flex flex-col items-center justify-center text-center p-6 my-auto">
-          <div className="w-14 h-14 rounded-2xl bg-linear-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-white shadow-xl shadow-cyan-600/20 mb-4">
-            <Terminal className="w-7 h-7" />
+        <div className="h-full flex flex-col items-center justify-center text-center p-6 my-auto animate-view-enter">
+          <div className="w-16 h-16 border-2 border-accent overflow-hidden shadow-hard mb-5">
+            <BrandLogo size={64} className="w-full h-full" />
           </div>
 
-          <h2 className="font-['Space_Grotesk'] text-2xl font-bold text-slate-100 mb-1">
-            CodeMentor AI
+          <h2 className="font-display text-3xl text-ink mb-2">
+            CodeMentor <span className="text-accent-bright italic">AI</span>
           </h2>
-          <p className="text-slate-400 text-sm max-w-md mb-6 leading-relaxed">
-            Your conversational DSA mentor. Ask questions, analyze algorithmic approaches, debug edge cases, and view on-demand dry runs.
+          <p className="text-muted text-sm max-w-md mb-8 leading-relaxed">
+            Ask questions, analyze approaches, debug edge cases, and request dry runs.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-2.5 max-w-lg">
             <button
-              onClick={() => onActionClick("I want to analyze my solution for a DSA problem")}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-500/30 text-cyan-300 text-xs font-medium transition-all shadow-md hover:border-cyan-500/60"
+              onClick={() => onActionClick('I want to analyze my solution for a DSA problem')}
+              className="btn-brutal btn-brutal-blue flex items-center gap-2 px-4 py-2.5 text-xs"
             >
-              <Code2 className="w-4 h-4 text-cyan-400" />
+              <Code2 className="w-4 h-4" strokeWidth={2.25} />
               <span>Analyze My Solution</span>
             </button>
 
             <button
-              onClick={() => onActionClick("Can you explain a DSA problem?")}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-medium transition-all shadow-md hover:border-slate-700"
+              onClick={() => onActionClick('Can you explain a DSA problem?')}
+              className="btn-brutal btn-brutal-white flex items-center gap-2 px-4 py-2.5 text-xs"
             >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Explain a DSA Problem</span>
+              <Sparkles className="w-4 h-4 text-warn" strokeWidth={2.25} />
+              <span>Explain a Problem</span>
             </button>
 
             <button
-              onClick={() => onActionClick("What is dynamic programming and when do we use it?")}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-medium transition-all shadow-md hover:border-slate-700"
+              onClick={() => onActionClick('What is dynamic programming and when do we use it?')}
+              className="btn-brutal btn-brutal-white flex items-center gap-2 px-4 py-2.5 text-xs"
             >
-              <HelpCircle className="w-4 h-4 text-purple-400" />
-              <span>Ask a DSA Question</span>
+              <HelpCircle className="w-4 h-4 text-accent-bright" strokeWidth={2.25} />
+              <span>Ask a Question</span>
             </button>
           </div>
         </div>
@@ -74,15 +75,15 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
           ))}
 
           {isLoading && (
-            <div className="flex items-center gap-3 my-4">
-              <div className="w-8 h-8 rounded-lg bg-linear-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-white shadow-md animate-pulse">
-                <Terminal className="w-4 h-4" />
+            <div className="flex items-center gap-3 my-4 animate-fade-in">
+              <div className="w-8 h-8 border-2 border-accent overflow-hidden shadow-hard-sm shrink-0">
+                <BrandLogo size={32} className="w-full h-full" />
               </div>
-              <div className="flex items-center gap-1.5 p-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 text-xs">
-                <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" />
-                <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.2s]" />
-                <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.4s]" />
-                <span className="ml-1 text-slate-400 font-['JetBrains_Mono']">Reasoning...</span>
+              <div className="flex items-center gap-1.5 p-3 border-2 border-accent bg-paper-elevated text-muted text-xs shadow-hard-sm">
+                <div className="w-2 h-2 bg-accent animate-bounce-dot" />
+                <div className="w-2 h-2 bg-accent animate-bounce-dot [animation-delay:0.15s]" />
+                <div className="w-2 h-2 bg-accent animate-bounce-dot [animation-delay:0.3s]" />
+                <span className="ml-1.5 font-mono">Reasoning…</span>
               </div>
             </div>
           )}

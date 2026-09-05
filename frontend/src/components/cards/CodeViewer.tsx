@@ -25,23 +25,23 @@ export const CodeViewer: React.FC<CodeViewerData> = ({
       />
 
       {(time_complexity || space_complexity || explanation) && (
-        <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-xs text-slate-300 space-y-1.5 shadow-sm">
+        <div className="p-3 border-2 border-accent bg-paper-elevated shadow-hard-sm text-xs text-ink space-y-1.5">
           {(time_complexity || space_complexity) && (
-            <div className="flex items-center gap-3 font-['JetBrains_Mono'] text-[11px] text-slate-400">
+            <div className="flex items-center gap-3 font-mono text-[11px] text-muted flex-wrap">
               {time_complexity && (
-                <span>
-                  Time: <strong className="text-amber-300">{time_complexity}</strong>
+                <span className="border-2 border-accent px-2 py-1 font-medium bg-paper">
+                  Time: <strong className="text-warn">{time_complexity}</strong>
                 </span>
               )}
               {space_complexity && (
-                <span>
-                  Space: <strong className="text-cyan-300">{space_complexity}</strong>
+                <span className="border-2 border-accent px-2 py-1 font-medium bg-paper">
+                  Space: <strong className="text-accent-bright">{space_complexity}</strong>
                 </span>
               )}
             </div>
           )}
           {explanation && (
-            <p className="leading-relaxed text-slate-300">
+            <p className="leading-relaxed text-ink">
               {renderSafeText(explanation)}
             </p>
           )}
