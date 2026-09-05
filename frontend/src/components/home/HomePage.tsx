@@ -61,7 +61,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               <>
                 <button
                   onClick={openAuthModal}
-                  className="btn-brutal btn-brutal-yellow w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-display text-base"
+                  className="btn-brutal btn-brutal-yellow w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-display"
                 >
                   <span>Start Talking</span>
                   <ArrowRight className="w-4 h-4" strokeWidth={2.5} />

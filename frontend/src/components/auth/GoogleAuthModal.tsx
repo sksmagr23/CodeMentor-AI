@@ -131,7 +131,7 @@ export const GoogleAuthModal: React.FC = () => {
 
           {googleClientId ? (
             <div className="flex flex-col items-center space-y-4 w-full">
-              <div ref={googleBtnRef} className="flex justify-center w-full [&_div]:!rounded-none" />
+              <div ref={googleBtnRef} className="flex justify-center w-full [&_div]:rounded-none!" />
 
               {isSubmitting && (
                 <div className="flex items-center gap-2 text-xs text-muted font-mono">
